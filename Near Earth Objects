@@ -17,7 +17,7 @@ output:
 ```{r init, include=F}
 library(ezids)
 ```
-
+<span style="color: Blue;"> Our research topic aims to perform explorartory data analysis on the Nearest Earth Objects (NEO) dataset recorded by NASA. This particular dataset includes thousands of labeled observations, over the last 22 years, across multiple attributes that each aim to describe a specific object. Borrowing from the humor of the recent film *Don’t Look Up* by Adam Mckay and NASA’s success in the Double Asteroid Redirection Test (DART) mission, we thought that further describing and exploring this dataset would be opportune.</span> 
 
 ```{r setup, include=FALSE}
 # some of common options (and the defaults) are: 
