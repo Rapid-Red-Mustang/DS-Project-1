@@ -36,3 +36,17 @@ neo <- data.frame(read.csv("neo.csv", header = TRUE))
 str(neo)
 head(neo)
 ```
+```{r, results='markup'}
+library(tidyverse)
+neo <- read.csv("neo.csv")
+hazardous = neo %>% filter(hazardous=="True")
+safe = neo %>% filter(hazardous=="FALSE")
+xkablesummary(hazardous[c("relative_velocity")])
+xkablesummary(safe[c("relative_velocity")])
+ttest2sample_neo = t.test(hazardous$relative_velocity,safe$relative_velocity)
+ggplot(data=hazardous, aes(relative_velocity)) + 
+  +     geom_histogram(col="red", 
+                       +                    fill="blue") +
+  +     labs(x="Relative Velocity", y="Frequency") +
+  +     labs(title="Relative Velocity") 
+```
