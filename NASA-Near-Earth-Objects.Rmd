@@ -13,8 +13,10 @@ output:
   pdf_document:
     toc: yes
     toc_depth: '3'
+    
 ---
 ```{r init, include=F}
+library(tidyverse)
 library(ezids)
 ```
 <span style="color: Blue;"> Our research topic aims to perform explorartory data analysis on the Nearest Earth Objects (NEO) dataset recorded by NASA. This particular dataset includes thousands of labeled observations, over the last 22 years, across multiple attributes that each aim to describe a specific object. Borrowing from the humor of the recent film *Don’t Look Up* by Adam Mckay and NASA’s success in the Double Asteroid Redirection Test (DART) mission, we thought that further describing and exploring this dataset would be opportune.</span> 
@@ -30,9 +32,181 @@ options(scientific=T, digits = 3)
 # options(scipen=9, digits = 3) 
 # use scipen=999 to prevent scientific notation at all times
 ```
-```{r import_data}
-getwd()
+
+
+# Let's explore the dataset
+```{r import_data, results='markup'}
 neo <- data.frame(read.csv("neo.csv", header = TRUE))
-str(neo)
-head(neo)
 ```
+Displaying the structure of the data:
+```{r, results='markup'}
+print(str(neo))
+```
+Displaying the first 6 rows of the dataset:
+```{r, results='markup'}
+print(head(neo))
+```
+The number of NA values in the dataset => `r sum(is.na(neo))`
+
+
+Now, we split the dataset into 2 dataframes - one for hazardous and other for non-hazardous. This is to ease out the tests performed.
+
+```{r split dataset, results='markup'}
+hazardous = neo %>% filter(hazardous=="True")
+non_hazardous = neo %>% filter(hazardous=="False")
+```
+The dimensions of hazardous asteroids dataframe: `r dim(hazardous)`
+
+The dimensions of non_hazardous asteroids dataframe: `r dim(non_hazardous)`
+
+# Performing measures of central tendency using Summary
+
+Summary of absolute_magnitude of all asteroids:
+```{r summary, results='markup'}
+summary(neo)
+```
+
+Summary of absolute_magintude of hazardous asteroid: 
+```{r, results='markup'}
+summary(hazardous$absolute_magnitude)
+```
+
+Summary of absolute_magnitude of non-hazardous NEO: 
+```{r, results='markup'}
+summary(non_hazardous$absolute_magnitude)
+```
+ 
+## Let's find the mode
+
+```{r finding_mode, results='markup'}
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+```
+Mode of absolute_magnitude in neo dataset => `r getmode(neo$absolute_magnitude)`
+
+Mode of absolute_magnitude in hazardous dataset => `r getmode(hazardous$absolute_magnitude)`
+
+Mode of absolute_magnitude in non-hazardous dataset => `r getmode(non_hazardous$absolute_magnitude)`
+
+
+# Measures of Variance and Standard Deviation
+
+
+Variation of absolute_magnitude of hazardous NEO => `r var(hazardous$absolute_magnitude)`
+
+Variation of absolute_magnitude of non_hazardous NEO => `r var(non_hazardous$absolute_magnitude)`
+
+
+
+Standard deviation of absolute_magnitude of hazardous NEO => `r sd(hazardous$absolute_magnitude)`
+
+Standard deviation of absolute_magnitude of non_hazardous NEO => `r sd(non_hazardous$absolute_magnitude)`
+
+# Graphical understanding using Plots
+
+```{r graphical_representation}
+ggplot(hazardous, aes(x=absolute_magnitude)) + geom_histogram(bins=70, color="black", fill="pink") + labs(x="Absolute Magnitude", y="Frequency Count", title = "Histogram of absolute_magnitude of hazardous asteroids")
+
+ggplot(non_hazardous, aes(x=absolute_magnitude)) + geom_histogram(bins=70, color="black", fill="lightblue") + labs(x="Absolute Magnitude", y="Frequency Count", title = "Histogram of absolute_magnitude of non_hazardous asteroids")
+
+ggplot(neo, aes(x=absolute_magnitude, y=hazardous)) + geom_point(col = "green") + labs(x="Absolute Magnitude", y="Hazardous", title = "Scatter plot for hazardous vs non-hazardous asteroids")
+
+qqnorm(hazardous$absolute_magnitude, main="QQ Plot of the absolute magnitude of hazardous asteroids")
+
+qqnorm(non_hazardous$absolute_magnitude, main="QQ Plot of the absolute magnitude of non-hazardous asteroids")
+```
+
+Note - We see that the absolute_magnitude for hazardous NEO lies mostly between 19 to 22. While that of the non-hazardous asteroids gnerally lies between 23 to 27. 
+
+# Outliers
+Removing outliers is a good way to clean the dataset and obtain correct results. To remove the outliers in the dataset, we shall use outlierKD2 function
+```{r hazardous_outlier_removal, results='markup'}
+hazardous_outlier_removed = na.omit(outlierKD2(hazardous,absolute_magnitude, qqplt=TRUE, rm=TRUE))
+```
+The dimension of the hazardous dataframe after removing outliers: `r dim(hazardous_outlier_removed)`
+
+
+```{r outlier_non_hazardous_removal, results='markup'}
+non_hazardous_outlier_removed = na.omit(outlierKD2(non_hazardous,absolute_magnitude, qqplt=TRUE, rm=TRUE))
+```
+
+The dimension of the non_hazardous dataframe after removing outliers: `r dim(non_hazardous_outlier_removed)`
+
+# Distinct Values
+Now, there are multiple asteroids with the same "id" and "name" in the dataset. Each of those asteroids with the same name have the same absolute magnitude. We shall remove these in order for the dataset to follow the rules of a relational dataset. 
+We use the group_by function provided in R to do so and we take the mean of those asteroids with the same id and name so we don't have any risk of losing the data.
+```{r distinct_hazardous_groupby, results='markup'}
+hazardous_grouped = hazardous_outlier_removed %>% group_by(name) %>% summarise(absolute_magnitude = mean(absolute_magnitude))
+```
+The dimension of the hazardous dataframe after using only distinct asteroid ID's => `r dim(hazardous_grouped)`
+
+
+
+```{r distinct_non_hazardous_groupby, results='markup'}
+non_hazardous_grouped = non_hazardous_outlier_removed %>% group_by(name) %>% summarise(absolute_magnitude = mean(absolute_magnitude))
+```
+The dimension of the non_hazardous dataframe after using only distinct asteroid ID's => `r dim(non_hazardous_grouped)`
+
+
+# T-Tests
+Now, with all outliers removed and distinct values extracted, we can perform t-tests.
+
+T-Tests on hazardous dataframe:
+```{r t-test-hazardous, results='markup'}
+t.test(hazardous_grouped$absolute_magnitude)
+```
+
+T-Tests on non_hazardous dataframe:
+```{r t-test-non-hazardous, results='markup'}
+t.test(non_hazardous_grouped$absolute_magnitude)
+```
+
+# Contingency Table
+Now, we shall validate the above by printing the Contingency table.
+The contingency table of hazardous is below:
+```{r frequency_cut_hazardous, results='markup'}
+table(cut(hazardous_grouped$absolute_magnitude,seq(16,23,0.5)))
+```
+
+We see a higher frequency of values falling in the interval 21-22 for hazardous asteroids. However, as noticed in the plots drawn, the plot is left skewed. Hence, the average/mean shifted a bit towards the left. 
+
+
+The contingency table of non_hazardous is below:
+```{r frequency_cut_non_hazardous, results='markup'}
+table(cut(non_hazardous_grouped$absolute_magnitude,seq(16,32,0.5)))
+```
+
+We see a higher frequency of values falling in the interval 24-25 for non_hazardous.
+
+# Anova Test:
+For anova test, we need 2 samples of equal size - one from hazardous and another from non-hazardous
+```{r aov_test, results='markup'}
+# creating a third column in both dataframes to account for categorical variable - hazardous
+non_hazardous_grouped$hazardous=0
+hazardous_grouped$hazardous=1
+non_hazardous_sample = sample(1:nrow(non_hazardous_grouped), size=2105)
+summary(aov(absolute_magnitude ~ hazardous, data=rbind(hazardous_grouped, non_hazardous_sample)))
+```
+
+Observation - the p-value is a small number (<0.001) which indicates that we can reject the null hypothesis and confirm that the mean for hazardous and non-hazardous NEOs is not the same. 
+Note that the p-value is same from results obtained in anova test and t-test.
+
+
+# Correlation Plots:
+A correlation plot is used to determine how close each variable is to the other. Here, we are noting down the correlation between the 5 numerical variables in our NEO dataset. 
+```{r, results='markup'}
+library(corrplot)
+corrplot(cor(hazardous %>% select(absolute_magnitude, miss_distance, relative_velocity, est_diameter_max, est_diameter_min)), method="number")
+```
+
+
+As noted in the above correlation plot, we see that the the min and max estimated diameter is closely related to the absolute magnitude. It is inversely related. This makes sense because absolute magnitude (brightness of a NEO) indicates the size of the asteroid in question. And hence, we can say that the bigger the size of the asteroid, lesser the absolute magnitude (brighter the star), and thus potentially more hazardous is the asteroid.
+All other variables fall below the threshold limit. 
+
+
+
+
+
+
