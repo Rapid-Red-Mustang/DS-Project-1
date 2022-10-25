@@ -121,15 +121,15 @@ qqnorm(non_hazardous$absolute_magnitude, main="QQ Plot of the absolute magnitude
 Note - We see that the absolute_magnitude for hazardous NEO lies mostly between 19 to 22. While that of the non-hazardous asteroids gnerally lies between 23 to 27. 
 
 # Outliers
-Removing outliers is a good way to clean the dataset and obtain correct results. To remove the outliers in the dataset, we shall use outlierKD2 function
+Knowing if the dataset has outliers is a good way to know if the dataset has any "bad data". And it is essential to know or keep track of the number of records that represent outliers. To keep track of the outliers in the dataset, we shall use outlierKD2 function:
 ```{r hazardous_outlier_removal, results='markup'}
-hazardous_outlier_removed = na.omit(outlierKD2(hazardous,absolute_magnitude, qqplt=TRUE, rm=TRUE))
+hazardous_outlier_removed = outlierKD2(hazardous,absolute_magnitude, qqplt=TRUE, rm=TRUE)
 ```
 The dimension of the hazardous dataframe after removing outliers: `r dim(hazardous_outlier_removed)`
 
 
 ```{r outlier_non_hazardous_removal, results='markup'}
-non_hazardous_outlier_removed = na.omit(outlierKD2(non_hazardous,absolute_magnitude, qqplt=TRUE, rm=TRUE))
+non_hazardous_outlier_removed = outlierKD2(non_hazardous,absolute_magnitude, qqplt=TRUE, rm=TRUE)
 ```
 
 The dimension of the non_hazardous dataframe after removing outliers: `r dim(non_hazardous_outlier_removed)`
@@ -194,16 +194,30 @@ Observation - the p-value is a small number (<0.001) which indicates that we can
 Note that the p-value is same from results obtained in anova test and t-test.
 
 
-# Correlation Plots:
-A correlation plot is used to determine how close each variable is to the other. Here, we are noting down the correlation between the 5 numerical variables in our NEO dataset. 
-```{r, results='markup'}
+# Correlation with Diameter
+A correlation plot is used to determine how close each variable is to the other. Knowing that absolute magnitude indicates the size of the NEO, we shall draw a correlation plot with est_diameter_min and est_diameter_max to see if it does hold significance or not?
+```{r correlation_magnitude_diameter, results='markup'}
 library(corrplot)
-corrplot(cor(hazardous %>% select(absolute_magnitude, miss_distance, relative_velocity, est_diameter_max, est_diameter_min)), method="number")
+corrplot(cor(hazardous %>% select(absolute_magnitude, est_diameter_min, est_diameter_max), method = "pearson"), method="number", title="Pearson correlation of absolute magnitude with diameter variables", mar=c(1,1,1,1))
 ```
 
-
 As noted in the above correlation plot, we see that the the min and max estimated diameter is closely related to the absolute magnitude. It is inversely related. This makes sense because absolute magnitude (brightness of a NEO) indicates the size of the asteroid in question. And hence, we can say that the bigger the size of the asteroid, lesser the absolute magnitude (brighter the star), and thus potentially more hazardous is the asteroid.
-All other variables fall below the threshold limit. 
+
+
+
+# Overall Correlation Plots:
+After exploring each of these 3 variables, we shall now see their correlation with that of our target variable - hazardous. We shall draw both - Pearson and Spearman correlation plots. 
+
+```{r, results='markup'}
+hazardous$hazardous = as.integer(as.logical(hazardous$hazardous))
+non_hazardous$hazardous = as.integer(as.logical(non_hazardous$hazardous))
+
+corrplot(cor(rbind(hazardous, non_hazardous) %>% select(absolute_magnitude, miss_distance, relative_velocity, est_diameter_min, est_diameter_max, hazardous ), method= "pearson"), method="number", title = "Pearson Correlation", outline = TRUE, mar = c(1,1,1,1))
+
+corrplot(cor(rbind(hazardous, non_hazardous) %>% select(absolute_magnitude, miss_distance, relative_velocity, est_diameter_min, est_diameter_max, hazardous ), method= "spearman"), method="number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
+```
+
+Here, we see that hazardous variable has a higher correlation with asbsolute magnitude, and the diameter variables. This means that the size of the asteroid plays a very significant role in deciding if the asteroid is hazardous or not. 
 
 
 
