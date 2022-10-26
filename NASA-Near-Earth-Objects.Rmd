@@ -38,36 +38,13 @@ str(neo)
 head(neo)
 ```
 
-
-
-
 ```{r, results='markup'}
 #Tyler 
-# 6. Initial Correlation
-loadPkg('corrplot')
-neo$hazardous = ifelse(neo$hazardous == 'True',1,0)
-neo$hazardous = as.numeric(neo$hazardous)
-str(neo)
-x = cor(neo[c(3:6,9,10)], method = 'spearman')
-y = cor(neo[c(3:6,9,10)], method = 'pearson')
-corrplot.mixed(x)
-corrplot.mixed(y)
-```
-
-
-```{r, results='markup'}
-#Tyler 
-#1. Summary of the data set (str(), summary(), subset(), edited variable to `millions of kilometers`)
-#2. Descriptive statistics (summary- mean(), median()-, range(), sd())
+#1. Descriptive statistics
+#2. [When Applicable] Measures of variance
 #3. Graphical interpretations of the data
-#4. [When Applicable] Measures of variance
-#5. [When Applicable] Normality tests
-#6. [When Applicable] Initial correlation - Chi-Squared tests - ANOVA analysis - T-test/Intervals
-```
-
-```{r, results='markup'}
-# hazardous_grouped = hazardous_outlier_removed %>% group_by(name) %>% summarise(absolute_magnitude = mean(absolute_magnitude))
-
+#4. [When Applicable] Normality tests
+#5. [When Applicable] ANOVA analysis - T-test/Intervals
 ```
 
 ```{r, results='markup'}
@@ -76,16 +53,22 @@ corrplot.mixed(y)
 
 neo_tyler = neo[c(2, 6, 10)] #getting the columns name, miss_distance and hazardous
 neo_tyler$hazardous = factor(neo_tyler$hazardous)
-str(neo_tyler) #showing the data types
+#str(neo_tyler) #showing the data types
 
 neo_tyler$miss_distance = neo_tyler$miss_distance/1.496e+8 #Expressing unit in au (astronomical units)
 
-summary(neo_tyler$miss_distance ) #summarizing only numeric variable in au
+summary(neo_tyler$miss_distance) #summarizing only numeric variable in au
 
-neo_tyler$miss_distance = (neo_tyler$miss_distance * 1.496e+8)/1000000
+neo_tyler$miss_distance = (neo_tyler$miss_distance*1.496e+8)/1000000
 
-neo_h_tyler = subset(neo_tyler, neo_tyler$hazardous == 1) #Sub-setting the data into hazardous 
-neo_nh_tyler = subset(neo_tyler, neo_tyler$hazardous == 0) #Sub-setting the data into non-hazardous
+library(dplyr)
+grouped_data = neo %>% group_by(name) %>% summarise(miss_distance = mean(miss_distance), hazardous = min(hazardous))
+
+neo_h_tyler = subset(grouped_data, grouped_data$hazardous == 'True') #Sub-setting the data into hazardous 
+neo_nh_tyler = subset(grouped_data, grouped_data$hazardous == 'False') #Sub-setting the data into non-hazardous
+
+neo_h_tyler$miss_distance = neo_h_tyler$miss_distance/1000000
+neo_nh_tyler$miss_distance = neo_nh_tyler$miss_distance/1000000
 
 summary(neo_h_tyler$miss_distance) #Summary of hazardous miss_distance
 summary(neo_nh_tyler$miss_distance) #Summary of non-hazardous miss_distance
@@ -112,14 +95,14 @@ library(ggplot2)
 #For neo_h_tyler as a whole:
 ggplot(neo_h_tyler, aes(miss_distance, ..count../sum(..count..)*100))+
   geom_histogram(col = 'black', fill ='red', bins = 20)+
-  labs(title = 'Histogram of relative frequency for `Miss Distance` of hazardous (n=8840)')+
+  labs(title = 'Histogram of relative frequency for `Miss Distance` of hazardous (n=2173)')+
   xlab('Miss distance (millions of kilometers)')+
   ylab('Frequency %')
 
 #For neo_nh_tyler as a whole:
 ggplot(neo_nh_tyler, aes(miss_distance, ..count../sum(..count..)*100))+
   geom_histogram(col = 'black', fill ='green', bins = 20)+
-  labs(title = 'Histogram of relative frequency for `Miss Distance` of not hazardous (n=81996)')+
+  labs(title = 'Histogram of relative frequency for `Miss Distance` of not hazardous (n=25250)')+
   xlab('Miss distance (millions of kilometers)')+
   ylab('Frequency %')
 
@@ -127,36 +110,19 @@ ggplot(neo_nh_tyler, aes(miss_distance, ..count../sum(..count..)*100))+
 #For neo_h_tyler and neo_nh_tyler as a whole:
 ggplot(neo_tyler, aes(y=neo_tyler$miss_distance, x=neo_tyler$hazardous))+
   geom_boxplot(colour = c('green', 'red'))+
-  labs(title = 'Boxplot of `Miss distance` vs hazardous')+
-  xlab('Hazardous')+
+  labs(title = 'Boxplot of `Miss distance` vs hazardous variable')+
+  xlab('Hazardous variable')+
   ylab('Miss distance (millions of kilometers)')+
   scale_x_discrete(labels = c('Not hazardous','hazardous'))
 
 #QQ-plots:
 #For neo_h_tyler as a whole:
-qqnorm(neo_h_tyler$miss_distance, col='red', main = 'QQ Plot for `miss_distance` of hazardous (n=8840)')
+qqnorm(neo_h_tyler$miss_distance, col='red', main = 'QQ Plot for `miss_distance` of hazardous (n=2173)')
 qqline(neo_h_tyler$miss_distance)
 #For neo_nh_tyler as a whole:
-qqnorm(neo_nh_tyler$miss_distance, col='green', main = 'QQ Plot for `miss_distance` of not hazardous (n=81996)')
+qqnorm(neo_nh_tyler$miss_distance, col='green', main = 'QQ Plot for `miss_distance` of not hazardous (n=25250)')
 qqline(neo_nh_tyler$miss_distance)
 #Clearly under-dispersed data, or platykurtic distribution, having negative excess kurtosis. 
-```
-
-```{r, results='markup'}
-#Tyler 
-#5. [When Applicable] Normality tests
-
-#shapiro.test(neo_h_tyler$miss_distance)
-#shapiro.test(neo_nh_tyler$miss_distance)
-```
-
-
-```{r, results='markup'}
-#Tyler 
-#6. [When Applicable] Initial correlation - Chi-Squared tests - ANOVA analysis - T-test/Intervals
-#For the entire group: Initial correlation 
-
-#For the individual part: Chi-Squared tests - ANOVA analysis - T-test/Intervals
 ```
 
 ```{r, results='markup'}
@@ -189,7 +155,9 @@ t.test(neo_nh_tyler$miss_distance, conf.level = 0.99)
 #H0: The mean for h and nh are the same 
 #H1: The means are NOT the same
 
-anova_tyler = aov(neo_tyler$miss_distance ~ neo_tyler$hazardous, neo_tyler)
+grouped_data$miss_distance = grouped_data$miss_distance/1000000
+
+anova_tyler = aov(grouped_data$miss_distance ~ grouped_data$hazardous, neo_tyler)
 summary(anova_tyler)
 
 # Post-Hoc Follow-up
