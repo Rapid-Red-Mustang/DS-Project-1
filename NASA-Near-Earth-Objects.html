@@ -2496,6 +2496,7 @@ hazardous_grouped$hazardous=1
 non_hazardous_sample = sample(1:nrow(non_hazardous_grouped), size=2105)
 summary(aov(absolute_magnitude ~ hazardous, data=rbind(hazardous_grouped, non_hazardous_sample)))</code></pre>
 <pre><code>##               Df   Sum Sq  Mean Sq F value Pr(&gt;F)    
+## hazardous      1 96777137 96777137 4.9e+07 &lt;2e-16 ***
 ## Residuals   2172     4290        2                   
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
