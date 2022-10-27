@@ -44,8 +44,19 @@ hazardous = neo %>% filter(hazardous=="True")
 safe = neo %>% filter(hazardous=="False")
 xkablesummary(hazardous[c("relative_velocity")])
 xkablesummary(safe[c("relative_velocity")])
+
 ttest2sample_neo = t.test(hazardous$relative_velocity,safe$relative_velocity)
 ttest2sample_neo
+
+ttestsafe95 = t.test(x=safe$relative_velocity, conf.level = .95)
+ttestsafe99 = t.test(x=safe$relative_velocity, conf.level = .99)
+ttestsafe95$conf.int
+ttestsafe99$conf.int
+
+ttesthaz95 = t.test(x=hazardous$relative_velocity, conf.level = .95)
+ttesthaz99 = t.test(x=hazardous$relative_velocity, conf.level = .99)
+ttesthaz95$conf.int
+ttesthaz99$conf.int
 ```
 
 ```{r, results='markup'}
