@@ -59,7 +59,7 @@ ttesthaz95$conf.int
 ttesthaz99$conf.int
 ```
 
-```{r, results='markup'}
+```{r plots, results='markup'}
 ggplot(data=hazardous, aes(relative_velocity)) + geom_histogram(col='red',fill="blue")+labs(x= "Velocity", y="Frequency") + labs(title="Frequency Distribution of Hazardous Relative Velocities")
 
 ggplot(data=safe, aes(relative_velocity)) + geom_histogram(col='red',fill="blue")+labs(x= "Velocity", y="Frequency") + labs(title="Frequency Distribution of Hazardous Relative Velocities")
