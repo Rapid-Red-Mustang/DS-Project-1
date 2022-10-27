@@ -104,6 +104,9 @@ ttesthaz95 = t.test(x=hazardous$relative_velocity, conf.level = .95)
 ttesthaz99 = t.test(x=hazardous$relative_velocity, conf.level = .99)
 ttesthaz95$conf.int
 ttesthaz99$conf.int
+
+anovavelocity = aov(formula = relative_velocity ~ hazardous, data = neo)
+xkabledply(anovavelocity)
 ```
 
 ```{r, results='markup'}
