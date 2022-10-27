@@ -38,6 +38,7 @@ options(scientific=T, digits = 3)
 ```{r import_data, results='markup'}
 neo <- data.frame(read.csv("neo.csv", header = TRUE))
 ```
+
 Displaying the structure of the data:
 ```{r, results='markup'}
 print(str(neo))
@@ -218,8 +219,6 @@ corrplot(cor(rbind(hazardous, non_hazardous) %>% select(absolute_magnitude, miss
 ```
 
 Here, we see that hazardous variable has a higher correlation with asbsolute magnitude, and the diameter variables. This means that the size of the asteroid plays a very significant role in deciding if the asteroid is hazardous or not. 
-
-
 
 
 
