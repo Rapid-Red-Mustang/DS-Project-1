@@ -128,6 +128,12 @@ ggplot(data=hazardous, aes(relative_velocity)) + geom_histogram(col='red',fill="
 ggplot(data=safe, aes(relative_velocity)) + geom_histogram(col='red',fill="blue")+labs(x= "Velocity (km/s)", y="Frequency") + labs(title="Frequency Distribution of Safe Relative Velocities")
 ```
 
+```{r, results='markup'}
+velocity_outlier = outlierKD2(hazardous,relative_velocity, rm=TRUE)
+safe_outlier = outlierKD2(safe,relative_velocity, rm=TRUE)
+```
+
+
 # Miss Distance
 
 ```{r, results='markup'}
