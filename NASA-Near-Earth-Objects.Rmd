@@ -92,6 +92,7 @@ hazardous = neo %>% filter(hazardous=="True")
 safe = neo %>% filter(hazardous=="False")
 xkablesummary(hazardous[c("relative_velocity")])
 xkablesummary(safe[c("relative_velocity")])
+
 ttest2sample_neo = t.test(hazardous$relative_velocity,safe$relative_velocity)
 ttest2sample_neo
 
@@ -107,9 +108,21 @@ ttesthaz99$conf.int
 
 anovavelocity = aov(formula = relative_velocity ~ hazardous, data = neo)
 xkabledply(anovavelocity)
+
+tukeyvelocity <- TukeyHSD(anovavelocity)
+tukeyvelocity
+
+plot(tukeyvelocity, las=1 , col="brown", title = "TUKEY Multiple Comparison of Means for Relative Velocity")
 ```
 
 ```{r, results='markup'}
+
+qqnorm(hazardous$relative_velocity, col='green', main = 'QQ Plot for Velocity of Hazardous Objects')
+qqline(hazardous$relative_velocity)
+
+qqnorm(safe$relative_velocity, col='green', main = 'QQ Plot for Velocity of Safe Objects')
+qqline(safe$relative_velocity)
+
 ggplot(data=hazardous, aes(relative_velocity)) + geom_histogram(col='red',fill="blue")+labs(x= "Velocity (km/s)", y="Frequency") + labs(title="Frequency Distribution of Hazardous Relative Velocities")
 
 ggplot(data=safe, aes(relative_velocity)) + geom_histogram(col='red',fill="blue")+labs(x= "Velocity (km/s)", y="Frequency") + labs(title="Frequency Distribution of Safe Relative Velocities")
