@@ -3,7 +3,8 @@ title: "DATS 6101 Project 1"
 author: "Tyler Wallett, Anushka Vuppala and David Li"
 # date: "today"
 date: "`r Sys.Date()`"
-output:
+output: 
+  rmdformats::readthedown:
   html_document:
     code_folding: hide
     number_sections: false
@@ -19,7 +20,29 @@ output:
 library(tidyverse)
 library(ezids)
 ```
+# Introduction
 <span style="color: Blue;"> Our research topic aims to perform explorartory data analysis on the Nearest Earth Objects (NEO) dataset recorded by NASA. This particular dataset includes thousands of labeled observations, over the last 22 years, across multiple attributes that each aim to describe a specific object. Borrowing from the humor of the recent film *Don’t Look Up* by Adam Mckay and NASA’s success in the Double Asteroid Redirection Test (DART) mission, we thought that further describing and exploring this dataset would be opportune.</span> 
+
+This EDA that we do can help with the early detection of an asteroid. With the early detection, NASA can take quick remedies to help eliminate the threat. NASA’s DART mission (Double Asteroid Redirection Test) was done for the same purpose. It was designed to deflect an asteroid with a certain momentum by hitting it head-on or attempting to slow it down. More can be read online from this [article](https://en.wikipedia.org/wiki/Double_Asteroid_Redirection_Test)
+
+According to NASA’s [official documentation](https://cneos.jpl.nasa.gov/about/neo_groups.html) on PHAs, a PHA is technically termed using parameters that measure the asteroid’s characteristics and then make a decision if the asteroid is considered hazardous based on certain thresholds. Specifically, all asteroids with an Earth Minimum Orbit intersection Distance (MOID) of 0.05 au or less and an absolute magnitude (H) of 22.0 or less are considered Potentially Hazardous Asteroids (PHAs). In other words, asteroids that can’t get any closer to the Earth (i.e., MOID) than 0.05 au (roughly 7,480,000km) or are smaller than about 140m in diameter (i.e., H=22.0) are not considered PHAs.
+ 
+The current dataset that we have contains 90,000 rows. Each row represents a NEO identified by an ID and name. Out of these 90,000 rows, 9,000 of them are hazardous and 81,000 of them are non-hazardous. This dataset does not contain null values. Apart from the hazardous target variable, our dataset contains 5 numerical variables that can help identify if the asteroid is hazardous or not. These 5 variables are:
+
+1.	est_diameter_min (km) – estimated minimum diameter of the NEO
+1.	est_diameter_max (km) – estimated maximum diameter of the NEO
+1.	relative_velocity – the velocity (in km/seconds) with which the NEO was travelling with respect to Earth 
+1.	miss_distance – distance (in km) by which the asteroid missed the Earth’s surface
+1.	absolute_magnitude (H) – signifies the brightness of the asteroid
+
+Out of these 5 variables, we have 3 variables that play a primary role in determining if the asteroid was harmful or not. Those are:
+
+1.	relative_velocity
+1.	miss_distance
+1.	absolute_magnitude
+
+Throughout the rest of this RMD file, we go over each of these 3 variables in complete depth to answer our SMART question – what are some of the statistical characteristics of Nearest Earth Objects, over the last 22 years, in terms of relative velocity, miss distance and absolute magnitude, that make them hazardous or not?
+
 
 ```{r setup, include=FALSE}
 # some of common options (and the defaults) are: 
@@ -35,15 +58,15 @@ options(scientific=T, digits = 3)
 
 
 # Let's explore the dataset
-```{r import_data, results='markup'}
+```{r import_data, results='markup', echo=FALSE}
 neo <- data.frame(read.csv("neo.csv", header = TRUE))
 ```
 Displaying the structure of the data:
-```{r, results='markup'}
+```{r, results='markup', echo=FALSE}
 print(str(neo))
 ```
 Displaying the first 6 rows of the dataset:
-```{r, results='markup'}
+```{r, results='markup', echo=FALSE}
 print(head(neo))
 ```
 The number of NA values in the dataset => `r sum(is.na(neo))`
@@ -51,7 +74,7 @@ The number of NA values in the dataset => `r sum(is.na(neo))`
 
 Now, we split the dataset into 2 dataframes - one for hazardous and other for non-hazardous. This is to ease out the tests performed.
 
-```{r split dataset, results='markup'}
+```{r split dataset, results='markup', echo=FALSE}
 hazardous = neo %>% filter(hazardous=="True")
 non_hazardous = neo %>% filter(hazardous=="False")
 ```
@@ -62,22 +85,23 @@ The dimensions of non_hazardous asteroids dataframe: `r dim(non_hazardous)`
 # Performing measures of central tendency using Summary
 
 Summary of all asteroids is as follows:
-```{r summary, results='markup'}
+```{r summary, results='markup', echo=FALSE}
 summary(neo)
 ```
 
 
 # Distinct Values
-Now, there are multiple asteroids with the same "id" and "name" in the dataset. We shall remove these in order for the dataset to follow the rules of a relational dataset. 
+Now, there are multiple asteroids with the same "id" and "name" in the dataset. 
+This could happen due to multiple tests being performed on the asteroids or it could be another different reason. We shall remove these in order for the dataset to follow the rules of a relational dataset. 
 We use the group_by function provided in R to do so and we take the mean of those asteroids with the same id and name so we don't have any risk of losing the data.
-```{r distinct_hazardous_groupby, results='markup'}
+```{r distinct_hazardous_groupby, results='markup', echo=FALSE}
 hazardous_grouped = hazardous %>% group_by(name) %>% summarise(absolute_magnitude = mean(absolute_magnitude), relative_velocity = mean(relative_velocity), miss_distance = mean(miss_distance), hazardous = min(hazardous))
 ```
 The dimension of the hazardous dataframe after using only distinct asteroid ID's => `r dim(hazardous_grouped)`
 
 
 
-```{r distinct_non_hazardous_groupby, results='markup'}
+```{r distinct_non_hazardous_groupby, results='markup', echo=FALSE}
 non_hazardous_grouped = non_hazardous %>% group_by(name) %>% summarise(absolute_magnitude = mean(absolute_magnitude), relative_velocity = mean(relative_velocity), miss_distance = mean(miss_distance), hazardous = min(hazardous))
 ```
 The dimension of the non_hazardous dataframe after using only distinct asteroid ID's => `r dim(non_hazardous_grouped)`
@@ -273,19 +297,26 @@ tukeyAoV
 
 
 # Absolute Magnitude 
+Absolute magnitude is the third variable that we will be go over in detail. According to Wikipedia, it is defined as a measure of magnitude (brightness) of a celestial object as it would be seen at a standard distance of 10 parsecs. 
+Absolute magnitude plays a very important role in determining if the NEO is hazardous or not. This is because the inverse square law states that the brightness of a light source decreases with the square of the size of that asteroid. Hence, this would indicate that absolute magnitude variable must have a certain relationship with the diameter variables of the asteroid (est_diameter_min and est_diameter_max). 
+Also, from the official [NASA documentation](https://cneos.jpl.nasa.gov/about/neo_groups.html), it is worth pointing out that the absolute magnitude of the PHAs is always less than 22.0.
+Throughout the rest of the documentation, we shall go over plots and perform tests to prove whether the hazardous asteroid's absolute magnitude lies below 22.0 H or no. 
+
+Before that, we shall explore some key characteristics of absolute_magnitude in detail:
+
 Summary of absolute_magintude of hazardous asteroid: 
-```{r, results='markup'}
+```{r, results='markup', echo=FALSE}
 summary(hazardous$absolute_magnitude)
 ```
 
 Summary of absolute_magnitude of non-hazardous NEO: 
-```{r, results='markup'}
+```{r, results='markup', echo=FALSE}
 summary(non_hazardous$absolute_magnitude)
 ```
  
 ## Let's find the mode
 
-```{r finding_mode, results='markup'}
+```{r finding_mode, results='markup', echo=FALSE}
 getmode <- function(v) {
    uniqv <- unique(v)
    uniqv[which.max(tabulate(match(v, uniqv)))]
@@ -313,12 +344,12 @@ Standard deviation of absolute_magnitude of non_hazardous NEO => `r sd(non_hazar
 
 ## Graphical understanding using Plots
 
-```{r graphical_representation}
-ggplot(hazardous, aes(x=absolute_magnitude)) + geom_histogram(bins=70, color="black", fill="pink") + labs(x="Absolute Magnitude", y="Frequency Count", title = "Histogram of absolute_magnitude of hazardous asteroids")
+```{r graphical_representation, echo=FALSE}
+ggplot(hazardous, aes(x=absolute_magnitude)) + geom_histogram(bins=70, color="black", fill="red") + labs(x="Absolute Magnitude", y="Frequency Count", title = "Histogram of absolute_magnitude of hazardous asteroids")
 
-ggplot(non_hazardous, aes(x=absolute_magnitude)) + geom_histogram(bins=70, color="black", fill="lightblue") + labs(x="Absolute Magnitude", y="Frequency Count", title = "Histogram of absolute_magnitude of non_hazardous asteroids")
+ggplot(non_hazardous, aes(x=absolute_magnitude)) + geom_histogram(bins=70, color="black", fill="green") + labs(x="Absolute Magnitude", y="Frequency Count", title = "Histogram of absolute_magnitude of non_hazardous asteroids")
 
-ggplot(neo, aes(x=absolute_magnitude, y=hazardous)) + geom_point(col = "green") + labs(x="Absolute Magnitude", y="Hazardous", title = "Scatter plot for hazardous vs non-hazardous asteroids")
+ggplot(neo, aes(x=absolute_magnitude, y=hazardous)) + geom_point(col = "lightblue") + labs(x="Absolute Magnitude", y="Hazardous", title = "Scatter plot for hazardous vs non-hazardous asteroids")
 
 qqnorm(hazardous$absolute_magnitude, main="QQ Plot of the absolute magnitude of hazardous asteroids")
 
@@ -327,15 +358,17 @@ qqnorm(non_hazardous$absolute_magnitude, main="QQ Plot of the absolute magnitude
 
 Note - We see that the absolute_magnitude for hazardous NEO lies mostly between 19 to 22. While that of the non-hazardous asteroids gnerally lies between 23 to 27. 
 
+This proves what was mentioned in NASA documentation that Potentially Hazardous Asteroids have an absolute magnitude of 22.0 H or less.
+
 ## Outliers
 Knowing if the dataset has outliers is a good way to know if the dataset has any "bad data". And it is essential to know or keep track of the number of records that represent outliers. To keep track of the outliers in the dataset, we shall use outlierKD2 function:
-```{r hazardous_outlier_removal, results='markup'}
+```{r hazardous_outlier_removal, results='markup', echo=FALSE}
 hazardous_outlier_removed = outlierKD2(hazardous,absolute_magnitude, qqplt=TRUE, rm=TRUE)
 ```
 The dimension of the hazardous dataframe after removing outliers: `r dim(hazardous_outlier_removed)`
 
 
-```{r outlier_non_hazardous_removal, results='markup'}
+```{r outlier_non_hazardous_removal, results='markup', echo=FALSE}
 non_hazardous_outlier_removed = outlierKD2(non_hazardous,absolute_magnitude, qqplt=TRUE, rm=TRUE)
 ```
 
@@ -345,27 +378,28 @@ The dimension of the non_hazardous dataframe after removing outliers: `r dim(non
 Now, with all outliers removed and distinct values extracted, we can perform t-tests.
 
 T-Tests on hazardous dataframe:
-```{r t-test-hazardous, results='markup'}
+```{r t-test-hazardous, results='markup', echo=FALSE}
 t.test(hazardous_grouped$absolute_magnitude)
 ```
 
 T-Tests on non_hazardous dataframe:
-```{r t-test-non-hazardous, results='markup'}
+```{r t-test-non-hazardous, results='markup', echo=FALSE}
 t.test(non_hazardous_grouped$absolute_magnitude)
 ```
 
 ## Contingency Table
 Now, we shall validate the above by printing the Contingency table.
 The contingency table of hazardous is below:
-```{r frequency_cut_hazardous, results='markup'}
+```{r frequency_cut_hazardous, results='markup', echo=FALSE}
 table(cut(hazardous_grouped$absolute_magnitude,seq(16,23,0.5)))
 ```
 
 We see a higher frequency of values falling in the interval 21-22 for hazardous asteroids. However, as noticed in the plots drawn, the plot is left skewed. Hence, the average/mean shifted a bit towards the left. 
 
+Here too, we can confirm that the PHAs in our dataset follow the official NASA documentation.
 
 The contingency table of non_hazardous is below:
-```{r frequency_cut_non_hazardous, results='markup'}
+```{r frequency_cut_non_hazardous, results='markup', echo=FALSE}
 table(cut(non_hazardous_grouped$absolute_magnitude,seq(16,32,0.5)))
 ```
 
@@ -373,7 +407,7 @@ We see a higher frequency of values falling in the interval 24-25 for non_hazard
 
 ## Anova Test:
 For anova test, we need 2 samples of equal size - one from hazardous and another from non-hazardous
-```{r aov_test, results='markup'}
+```{r aov_test, results='markup', echo=FALSE}
 # creating a third column in both dataframes to account for categorical variable - hazardous
 non_hazardous_grouped$hazardous=0
 hazardous_grouped$hazardous=1
@@ -384,10 +418,12 @@ summary(aov(absolute_magnitude ~ hazardous, data=rbind(hazardous_grouped, non_ha
 Observation - the p-value is a small number (<0.001) which indicates that we can reject the null hypothesis and confirm that the mean for hazardous and non-hazardous NEOs is not the same. 
 Note that the p-value is same from results obtained in anova test and t-test.
 
+Here, we finally prove that our dataset has the correct definition of PHAs and that they all have an absolute magnitude less than 22 H. 
+
 
 ## Correlation with Diameter
-A correlation plot is used to determine how close each variable is to the other. Knowing that absolute magnitude indicates the size of the NEO, we shall draw a correlation plot with est_diameter_min and est_diameter_max to see if it does hold significance or not?
-```{r correlation_magnitude_diameter, results='markup'}
+A correlation plot is used to determine how close each variable is to the other. We know from earlier that the absolute magnitude is inversely related to the size of the NEO. We shall draw a correlation plot with est_diameter_min and est_diameter_max to verify and see if it does hold significance or not?
+```{r correlation_magnitude_diameter, results='markup', echo=FALSE}
 library(corrplot)
 corrplot(cor(hazardous %>% select(absolute_magnitude, est_diameter_min, est_diameter_max), method = "pearson"), method="number", title="Pearson correlation of absolute magnitude with diameter variables", mar=c(1,1,1,1))
 ```
@@ -399,7 +435,7 @@ As noted in the above correlation plot, we see that the the min and max estimate
 # Overall Correlation Plots:
 After exploring each of these 3 variables, we shall now see their correlation with that of our target variable - hazardous. We shall draw both - Pearson and Spearman correlation plots. 
 
-```{r, results='markup'}
+```{r, results='markup', echo=FALSE}
 hazardous$hazardous = as.integer(as.logical(hazardous$hazardous))
 non_hazardous$hazardous = as.integer(as.logical(non_hazardous$hazardous))
 
@@ -408,8 +444,11 @@ corrplot(cor(rbind(hazardous, non_hazardous) %>% select(absolute_magnitude, miss
 corrplot(cor(rbind(hazardous, non_hazardous) %>% select(absolute_magnitude, miss_distance, relative_velocity, est_diameter_min, est_diameter_max, hazardous ), method= "spearman"), method="number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
 ```
 
-Here, we see that hazardous variable has a higher correlation with asbsolute magnitude, and the diameter variables. This means that the size of the asteroid plays a very significant role in deciding if the asteroid is hazardous or not. 
+Here, we see that hazardous variable has a higher correlation with absolute magnitude, and the diameter variables. This means that the size and brightness of the asteroid plays a very significant role in deciding if the asteroid is hazardous or not. These variables are followed by relative velocity and miss distance.
 
+# Github
+The screenshot below shows the [github](https://github.com/Rapid-Red-Mustang/DS-Project-1) contributions made by us individually:
+![alt text here](/Users/anushkavuppala/Documents/Anushka/GWU/Fall\ 2022/Data_Science/Project/github_contributions.png)
 
 
 
