@@ -446,9 +446,23 @@ corrplot(cor(rbind(hazardous, non_hazardous) %>% select(absolute_magnitude, miss
 
 Here, we see that hazardous variable has a higher correlation with absolute magnitude, and the diameter variables. This means that the size and brightness of the asteroid plays a very significant role in deciding if the asteroid is hazardous or not. These variables are followed by relative velocity and miss distance.
 
+# Limitations
+
+The `neo.csv` data set posed limitations in the variables, description and dictionary. Since the dataset was obtained from a web-based environment, kaggle, we had insufficient variables, a poor description of the dataset and no data dictionary provided. In terms of the variables provided, it would have been ideal to have one regarding the trajectory towards, or away, from earth, as well as other potentially hazardous, or not hazardous, variables. Nevertheless, we were restricted to just using the three variables that were quantifiable in order to characterize the potential of it being hazardous. In retrospect, just using these three variables might have been an over-simplification in our determination of a hazard. On the other hand, the description of the dataset is very limited given the constraint of using Kaggle. It would have been better if the dataset was obtained straight from a NASA website or API, however this was not possible. It would have been a huge perk to know how these variables are being used by NASA professionals, what characterizes an instance to be recorded multiple times, and why they initially attributed the boolean value for Hazardous. Finally, when it came to providing a data dictionary, the kaggle website did not have one. Thus, we had to do our own research as to what these variables meant, and what they were describing. Therefore, with insufficient variables, a poor description and no data dictionary it was difficult to infer, or fully understand, the root of a hazardous or not hazardous asteroid to fully answer our question.
+
 # Github
 The screenshot below shows the [github](https://github.com/Rapid-Red-Mustang/DS-Project-1) contributions made by us individually:
 ![alt text here](/Users/anushkavuppala/Documents/Anushka/GWU/Fall\ 2022/Data_Science/Project/github_contributions.png)
+
+# References:
+
+- Kaggle Dataset (Kaggle):
+Vani, S. (2022, June 17). NASA - Nearest Earth objects. Kaggle. Retrieved November 2, 2022, from https://www.kaggle.com/datasets/sameepvani/nasa-nearest-earth-objects 
+- Center for Near Earth Objects Studies (CNEOS):
+NASA. (n.d.). Neo basics. NASA. Retrieved November 2, 2022, from https://cneos.jpl.nasa.gov/about/neo_groups.html 
+- NASA (NASA):
+Bardan, R. (2022, October 11). NASA confirms Dart Mission Impact Changed Asteroid's motion in space. NASA. Retrieved November 2, 2022, from https://www.nasa.gov/press-release/nasa-confirms-dart-mission-impact-changed-asteroid-s-motion-in-space 
+
 
 
 
