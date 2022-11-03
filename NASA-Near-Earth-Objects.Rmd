@@ -399,6 +399,15 @@ tukeyAoV <- TukeyHSD(anova_tyler)
 tukeyAoV
 ```
 
+## 6. Conclusion: 
+
+-Hazardous NEOs, on average, are slightly further away from Earth (roughly by 5-7 M kilometers) than those not hazardous. 
+
+-Hazardous NEOs vary less in their distance relative to Earth (σ < σ) than those not hazardous. 
+
+-Hazardous NEOs do not share the same sampling distribution of distance relative to Earth as those not hazardous.
+
+
 # Absolute Magnitude 
 Absolute magnitude is the third variable that we will be go over in detail. According to Wikipedia, it is defined as a measure of magnitude (brightness) of a celestial object as it would be seen at a standard distance of 10 parsecs. 
 Absolute magnitude plays a very important role in determining if the NEO is hazardous or not. This is because the inverse square law states that the brightness of a light source decreases with the square of the size of that asteroid. Hence, this would indicate that absolute magnitude variable must have a certain relationship with the diameter variables of the asteroid (est_diameter_min and est_diameter_max). 
