@@ -4,7 +4,6 @@ author: "Tyler Wallett, Anushka Vuppala and David Li"
 # date: "today"
 date: "`r Sys.Date()`"
 output: 
-  rmdformats::readthedown:
   html_document:
     code_folding: hide
     number_sections: false
@@ -109,6 +108,8 @@ The dimension of the non_hazardous dataframe after using only distinct asteroid 
 
 # Relative Velocity
 
+Relative velocity of an NEO is defined as its velocity compared to the earth. It is measured in kilometers per second. 
+
 ```{r, results='markup'}
 library(tidyverse)
 neo <- read.csv("neo.csv")
@@ -139,6 +140,12 @@ tukeyvelocity
 plot(tukeyvelocity, las=1 , col="brown", title = "TUKEY Multiple Comparison of Means for Relative Velocity")
 ```
 
+For basic descriptive statistics, measures of central tendency, mean and median, are all higher in the "hazardous" group compared to the objects deemed "safe." 
+
+Using a 2-sample T-Test shows that the difference in means in two groups are significant at the 95% confidence level, as the P-value is smaller than .05.
+
+After constructing confidence intervals at 95% and 99%, we see that the HIGHEST relative velocity in the "safe" condition is lower than the LOWEST relative velocity in the "hazardous" condition, giving more support to the correlation of high relative velocity associated with whether a NEO is hazardous. 
+
 ```{r, results='markup'}
 
 qqnorm(hazardous$relative_velocity, col='green', main = 'QQ Plot for Velocity of Hazardous Objects')
@@ -157,6 +164,9 @@ velocity_outlier = outlierKD2(hazardous,relative_velocity, rm=TRUE)
 safe_outlier = outlierKD2(safe,relative_velocity, rm=TRUE)
 ```
 
+Relative velocity is one of the observable characteristics of the Kaggle dataset that other researchers in the field have looked at previously (Araujo 2014). Their research sought to identify the frequency of that asteroids would cross into potentially critical radii (“close encounters”) and, alongside impact parameter, relative velocity was one of the components the researchers examined. The researchers also used histograms to showcase the relative velocity component of their exploratory data analysis. With just a brief glance, the histograms clearly show that asteroids of the Atens groups suffered encounters with a higher relative velocity compared to the Amor group. Their overall findings were similar to ours, with asteroids and their satellites having a higher relative velocity representing the greatest probability of surviving the critical radii in the close encounter. 
+
+To estimate an asteroid’s destructive damage to Earth and her human-built infrastructure, we have baseline comparisons (as horrible as it is) in the area of high-yield nuclear weapons. To approximate asteroid impact energy as comparable to the yield of a high-explosive weapon in the megaton range, we would need to know the asteroid mass. Basic physics kinematics states that kinetic energy is a function of mass and velocity squared, KE= ½ MV^2. A one megaton explosion measures the explosive energy of one million tons of TNT, Trinitrotoluene, and is 4.18x10^15 Joules (Krehl 2008). The atomic bomb that dropped on Hiroshima was only 15 kilotons. Asteroids would yield easily in the megatons (Tonry 2010). Research on the former also requires mass to finalize the estimate of energy, and the scientists have a method to derive mass via density (usually taken as ∼2–3 g cm-3). They use the information to estimate the destructive capacity, as well as proposing early warning detection systems using what they know about asteroid destructive impact. Our work would equally benefit if we had asteroid mass (or a way to derive it).  
 
 # Miss Distance
 
