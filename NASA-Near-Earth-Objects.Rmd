@@ -148,15 +148,15 @@ After constructing confidence intervals at 95% and 99%, we see that the HIGHEST 
 
 ```{r, results='markup'}
 
-qqnorm(hazardous$relative_velocity, col='green', main = 'QQ Plot for Velocity of Hazardous Objects')
+qqnorm(hazardous$relative_velocity, col='red', main = 'QQ Plot for Velocity of Hazardous Objects')
 qqline(hazardous$relative_velocity)
 
 qqnorm(safe$relative_velocity, col='green', main = 'QQ Plot for Velocity of Safe Objects')
 qqline(safe$relative_velocity)
 
-ggplot(data=hazardous, aes(relative_velocity)) + geom_histogram(col='red',fill="blue")+labs(x= "Velocity (km/s)", y="Frequency") + labs(title="Frequency Distribution of Hazardous Relative Velocities")
+ggplot(data=hazardous, aes(relative_velocity)) + geom_histogram(col='green',fill="red")+labs(x= "Velocity (km/s)", y="Frequency") + labs(title="Frequency Distribution of Hazardous Relative Velocities")
 
-ggplot(data=safe, aes(relative_velocity)) + geom_histogram(col='red',fill="blue")+labs(x= "Velocity (km/s)", y="Frequency") + labs(title="Frequency Distribution of Safe Relative Velocities")
+ggplot(data=safe, aes(relative_velocity)) + geom_histogram(col='red',fill="green")+labs(x= "Velocity (km/s)", y="Frequency") + labs(title="Frequency Distribution of Safe Relative Velocities")
 ```
 
 ```{r, results='markup'}
