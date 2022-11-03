@@ -239,7 +239,6 @@ To estimate an asteroid’s destructive damage to Earth and her human-built infr
 ## 1. Descriptive statistics:
 
 The miss distance, in kilometers relative to earth, was one of the variables of interest. We believe that this was one of the key factors that might influence the decision of whether an asteroid is hazardous or not. First, we began by sub-setting the data into `neo_tyler` with the variables of interest: `name`,`miss_distance` and `hazardous`. Further, we thought that it would seem appropriate to check whether the data confirms the range, of distance relative to earth, that Potentially Hazardous Asteroids PHAs have: "Potentially Hazardous Asteroids: NEAs whose Minimum Orbit Intersection Distance (MOID) with the Earth is **0.05** au or less" (NASA) Therefore, by converting the units from kilometers to astronomical units (au) and using the `summary()` function, we are able to confirm that these are indeed PHAs as defined by NASA. For the matters of this project, we thought that expressing the variable `miss_distance` in millions of kilometers relative to earth would be more comprehensible to the audience. 
->>>>>>> Stashed changes
 
 ```{r, results='markup'}
 #Tyler 
@@ -276,14 +275,7 @@ neo_nh_tyler$miss_distance = neo_nh_tyler$miss_distance/1000000
 summary(neo_h_tyler$miss_distance) #Summary of hazardous miss_distance
 summary(neo_nh_tyler$miss_distance) #Summary of non-hazardous miss_distance
 
-<<<<<<< Updated upstream
 ## 4. [When Applicable] Measures of variance / sd
-
-```{r, results='markup'}
-#Tyler 
-=======
->>>>>>> Stashed changes
-#4. [When Applicable] Measures of variance / sd
 
 #For neo_h_tyler as a whole:
 sd(neo_h_tyler$miss_distance)
@@ -292,15 +284,11 @@ sd(neo_h_tyler$miss_distance)
 sd(neo_nh_tyler$miss_distance)
 ```
 
-<<<<<<< Updated upstream
-## 3. Graphical interpretations of the data:
-=======
 ## 2. Graphical interpretations of the data:
 
 (Notation: h - for hazardous subset and nh- for not hazardous subset)
 
 - Boxplots: As expected, the boxplots show that slight difference in means for h is slightly higher than for those nh. Additionally, the ranges are identical for both groups, however their frequencies might differ, so let's take a look at the relative frequency histograms.
->>>>>>> Stashed changes
 
 ```{r, results='markup'}
 #Tyler 
@@ -353,15 +341,11 @@ qqline(neo_nh_tyler$miss_distance)
 #Clearly under-dispersed data, or platykurtic distribution, having negative excess kurtosis. 
 ```
 
-<<<<<<< Updated upstream
-## 6. [When Applicable] T-test/Intervals
-=======
 ## 4. T-test/Intervals
 
 Two-tailed t-tests:
 
 - @ 95% confidence level: The lower confidence level for h (which recall had the highest mean between h and nh) was of 35.2 millions of kilometers, and as for the highest confidence level for nh was of 30.2 millions of kilometer. Since there is a 5 million kilometer difference in the means, we thought that it would be best to check at a higher confidence level.
->>>>>>> Stashed changes
 
 ```{r, results='markup'}
 #Tyler 
@@ -390,14 +374,10 @@ t.test(neo_nh_tyler$miss_distance, conf.level = 0.99)
 #So, lets run ANOVA...
 ```
 
-<<<<<<< Updated upstream
-## 6. [When Applicable] ANOVA
-=======
 ## 5. ANOVA & Post-Hoc Tukey:
 
 ANOVA: The ANOVA test yielded highly significant results. As indicated by the extremely small p-value of 2e-16, these means do not come from the same sampling distribution, and therefore are different in their nature. So, to get a more accurate reading on these differences we ran a Post-Hoc Tukey test to know by how much precisely do these means differ.
 
->>>>>>> Stashed changes
 ```{r, results='markup'}
 #Tyler 
 #6. [When Applicable] ANOVA
@@ -418,7 +398,6 @@ Post-Hoc Tukey: In the Post-Hoc Tukey test we were able to identify that the mea
 tukeyAoV <- TukeyHSD(anova_tyler)
 tukeyAoV
 ```
-
 
 # Absolute Magnitude 
 Absolute magnitude is the third variable that we will be go over in detail. According to Wikipedia, it is defined as a measure of magnitude (brightness) of a celestial object as it would be seen at a standard distance of 10 parsecs. 
