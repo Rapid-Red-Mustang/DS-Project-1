@@ -27,7 +27,7 @@ options(scientific=T, digits = 3)
 # use scipen=999 to prevent scientific notation at all times
 ```
 
-```{r init, echo=FALSE}
+```{r, echo=FALSE}
 #Importing `ipums.csv` dataset
 getwd()
 ipums = data.frame(read.csv('ipums.csv'))
@@ -35,15 +35,15 @@ ipums = data.frame(read.csv('ipums.csv'))
 str(ipums)
 
 #Dropping unnecessary columns: YEAR, EDUCD and EMPSTATD
-library(dplyr)
+loadPkg('dplyr')
 ipums = select(ipums, c(2:5,7,9:10))
 
 str(ipums)
 
 #Using random sample data (as recommended) with new `ipumsdf`
-set.seed(123)
-ipumsdf = ipums[ sample(nrow(ipums),100000), ]
-ipumsdf
+#set.seed(123)
+#ipumsdf = ipums[ sample(nrow(ipums),100000), ]
+#ipumsdf
 ```
 
 
@@ -51,7 +51,7 @@ ipumsdf
 #Reformatting target column: EMPSTAT
 
 #Checking for unique values
-unique(ipumsdf$EMPSTAT)
+unique(ipums$EMPSTAT)
 
 #According to IPUMS, codes are the following:
 # 0 = N/A
@@ -59,31 +59,49 @@ unique(ipumsdf$EMPSTAT)
 # 2 = Unemployed
 # 3 = Not in labor force
 
-#Value counts of EMPSTAT 
-EMPSTAT_counts = table(ipumsdf$EMPSTAT)
-EMPSTAT_counts
-
 #Dropping 0 and 3 values
-ipumsdf = subset(ipumsdf, ipumsdf$EMPSTAT != 0 & ipumsdf$EMPSTAT != 3)
+ipums$EMPSTAT <- replace(ipums$EMPSTAT, ipums$EMPSTAT == 0, NA)
+ipums$EMPSTAT <- replace(ipums$EMPSTAT, ipums$EMPSTAT == 3, NA)
 
-#New value counts
-EMPSTAT_counts = table(ipumsdf$EMPSTAT)
-EMPSTAT_counts
+ipums <- na.omit(ipums)
 
 #Reformatting column to:
 # 0 = Unemployed
 # 1 = Employed
 
+ipums$EMPSTAT[ipums$EMPSTAT == 2] <- 0
 
-
+ipums$EMPSTAT <- as.factor(ipums$EMPSTAT)
 ```
+
+
+```{r, results='markup'}
+#EDA 
+
+#Proportion table for EDUC
+table1 <- table(ipums$EMPSTAT, ipums$EDUC)
+table1
+
+#EDUC barplot
+barplot( prop.table(table1, 2),
+         legend.text = TRUE,
+         ylab = "Proportion employment",
+         xlab = "Highest level of education attained (EDUC)",
+         names.arg=c('No schooling','Elementary-S','Middle-S','9th','10th','11th','High-S','1st-C','2nd-C','Undergraduate','Masters'),
+         args.legend = list(x = "topright",
+                          legend = c("Employed", "Unemployed"),
+                           inset = c(- 0.07, 0.15),
+                          cex = 0.75),
+         main = "Barplot of proportions employment vs EDUC", las=1, cex.names=0.8)
+```
+
 
 
 ```{r, results='markup'}
 #Reformatting columns: EDUC and WORKEDYR
 
 #Checking for unique values
-sort(unique(ipumsdf$EDUC))
+sort(unique(ipums$EDUC))
 
 #According to IPUMS, codes are the following:
 # 0 = No schooling
@@ -98,28 +116,5 @@ sort(unique(ipumsdf$EDUC))
 # 10 = 4th year college (Undergraduate)
 # 11 = 5+ year college (Masters or PHD)
 
-#Value counts of EDUC 
-EDUC_counts = table(ipumsdf$EDUC)
-EDUC_counts
+
 ```
-
-
-```{r, results='markup'}
-#EDA 
-
-#Proportion table for EDUC
-table1 <- table(ipumsdf$EMPSTAT, ipumsdf$EDUC)
-
-#EDUC barplot
-barplot( prop.table(table1, 2),
-         legend.text = TRUE,
-         ylab = "Proportion surviving",
-         xlab = "Gender",
-         names.arg=c(),
-         args.legend = list(x = "topright",
-                          legend = c("Survived", "Did not survive"),
-                           inset = c(- 0.065, 1.1),
-                          cex = 0.75),
-         main = "Barplot of proportions survived vs passenger sex")
-```
-
