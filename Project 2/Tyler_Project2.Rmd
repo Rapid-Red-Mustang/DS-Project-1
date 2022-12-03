@@ -156,3 +156,5 @@ ggplot(Employed, aes(AGE, ..count../sum(..count..)*100))+
   ylab('Frequency %')
 ```
 
+
+
