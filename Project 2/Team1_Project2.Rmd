@@ -153,3 +153,56 @@ ggplot(Employed, aes(AGE, ..count../sum(..count..)*100))+
   xlab('Age')+
   ylab('Frequency %')
 ```
+
+```{r, results='markup'}
+#Reformatting columns: EDUC and WORKEDYR
+
+#Checking for unique values
+sort(unique(ipums$EDUC))
+
+#According to IPUMS, codes are the following:
+# 1 = Married, spouse present
+# 2 = Married, spouse absent
+# 3 = Separated	
+# 4 = Divorced
+# 5 = Widowed
+# 6 = Never married/single
+
+#Reformatting to:
+# 1 = Married
+# 2 = Separated	
+# 3 = Divorced
+# 4 = Widowed
+# 5 = Single
+
+ipums$MARST[ipums$MARST == 2] <- 1
+ipums$MARST[ipums$MARST == 3] <- 2
+ipums$MARST[ipums$MARST == 4] <- 3
+ipums$MARST[ipums$MARST == 5] <- 4
+ipums$MARST[ipums$MARST == 6] <- 5
+
+ipums$MARST = as.factor(ipums$MARST)
+
+```
+
+
+```{r, results='markup'}
+#EDA 
+
+#Proportion table for EDUC
+table2 <- table(ipums$EMPSTAT, ipums$MARST)
+table2
+
+#EDUC barplot
+barplot( prop.table(table2, 2),
+         legend.text = TRUE,
+         ylab = "Proportion employment",
+         xlab = "Marital Status",
+         names.arg=c('Married','Separated','Divorced','Widowed','Single'),
+         args.legend = list(x = "topright",
+                          legend = c("Employed", "Unemployed"),
+                           inset = c(- 0.06, -0.13),
+                          cex = 0.60),
+         main = "Barplot of proportion `EMPSTAT` vs `MARST`", las=1, cex.names=0.85)
+
+```
