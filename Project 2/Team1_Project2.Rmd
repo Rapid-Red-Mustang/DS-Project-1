@@ -206,3 +206,5 @@ barplot( prop.table(table2, 2),
          main = "Barplot of proportion `EMPSTAT` vs `MARST`", las=1, cex.names=0.85)
 
 ```
+
+
