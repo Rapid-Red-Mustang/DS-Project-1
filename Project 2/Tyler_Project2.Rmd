@@ -132,3 +132,26 @@ barplot( prop.table(table1, 2),
          main = "Barplot of proportion `EMPSTAT` vs `EDUC`", las=2, cex.names=0.75)
 
 ```
+
+
+```{r, results='markup'}
+#EDA 
+
+#Age histogram plot by employment 
+Unemployed = subset(ipums, ipums$EMPSTAT == 0)
+
+Employed = subset(ipums, ipums$EMPSTAT == 1)
+
+library('ggplot2')
+ggplot(Unemployed, aes(AGE, ..count../sum(..count..)*100))+
+  geom_histogram(col = 'black', fill ='#FF9999', bins = 20)+
+  labs(title = 'Relative frequency histogram of age by Unemployed')+
+  xlab('Age')+
+  ylab('Frequency %')
+
+ggplot(Employed, aes(AGE, ..count../sum(..count..)*100))+
+  geom_histogram(col = 'black', fill ='#009E73', bins = 20)+
+  labs(title = 'Relative frequency histogram of age by Employed')+
+  xlab('Age')+
+  ylab('Frequency %')
+```
