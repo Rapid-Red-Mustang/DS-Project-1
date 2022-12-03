@@ -72,3 +72,63 @@ ipums$EMPSTAT[ipums$EMPSTAT == 2] <- 0
 
 ipums$EMPSTAT <- as.factor(ipums$EMPSTAT)
 ```
+
+```{r, results='markup'}
+#Reformatting columns: EDUC and WORKEDYR
+
+#Checking for unique values
+sort(unique(ipums$EDUC))
+
+#According to IPUMS, codes are the following:
+# 0 = No schooling
+# 1 = 4th grade (Elementary-school)
+# 2 = 5th, 6th, 7th or 8th grade (Middle-school)
+# 3 = 9th grade
+# 4 = 10th grade
+# 5 = 11th grade 
+# 6 = 12th grade (High-school)
+# 7 = 1st year college
+# 8 = 2nd year college
+# 10 = 4th year college (Undergraduate)
+# 11 = 5+ year college (Masters or PHD)
+
+#Reformatting column to:
+# 0 = No schooling
+# 1 = 4th grade (Elementary-school)
+# 2 = 5th, 6th, 7th or 8th grade (Middle-school)
+# 3 = 9th grade
+# 4 = 10th grade
+# 5 = 11th grade 
+# 6 = 12th grade (High-school)
+# 7 = 1st year college
+# 8 = 2nd year college
+# 9 = 4th year college (Undergraduate)
+# 10 = 5+ year college (Masters or PHD)
+
+ipums$EDUC[ipums$EDUC == 10] <- 9
+ipums$EDUC[ipums$EDUC == 11] <- 10
+
+ipums$EDUC <- as.factor(ipums$EDUC)
+```
+
+```{r, results='markup'}
+#EDA 
+
+#Proportion table for EDUC
+table1 <- table(ipums$EMPSTAT, ipums$EDUC)
+table1
+
+#EDUC barplot
+barplot( prop.table(table1, 2),
+         legend.text = TRUE,
+         ylab = "Proportion employment",
+         xlab = "Highest level of education attained",
+         names.arg=c('No schooling','Elementary-S','Middle-S','9th','10th','11th','High-S','1st-C','2nd-C','Undergraduate','Masters'),
+         args.legend = list(x = "topright",
+                          legend = c("Employed", "Unemployed"),
+                           inset = c(- 0.06, -0.13),
+                          cex = 0.60),
+         main = "Barplot of proportion `EMPSTAT` vs `EDUC`", las=2, cex.names=0.75)
+
+```
+
