@@ -1,0 +1,560 @@
+---
+title: "DATS 6101 Team 1 - Project 1"
+author: "Tyler Wallett, Anushka Vuppala and David Li"
+# date: "today"
+date: "`r Sys.Date()`"
+output: 
+  rmdformats::readthedown:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+    
+---
+```{r init, include=F}
+library(tidyverse)
+library(ezids)
+```
+# Introduction
+<span style="color: Blue;"> Our research topic aims to perform explorartory data analysis on the Nearest Earth Objects (NEO) dataset recorded by NASA. This particular dataset includes thousands of labeled observations, over the last 22 years, across multiple attributes that each aim to describe a specific object. Borrowing from the humor of the recent film *Don’t Look Up* by Adam Mckay and NASA’s success in the Double Asteroid Redirection Test (DART) mission, we thought that further describing and exploring this dataset would be opportune.</span> 
+
+The EDA performed can help with the early detection of an asteroid. With the early detection, NASA can take quick remedies to help eliminate the threat. NASA’s DART mission (Double Asteroid Redirection Test) was done for the same purpose. It was designed to deflect an asteroid with a certain momentum by hitting it head-on or attempting to slow it down. More can be read online from this [article](https://en.wikipedia.org/wiki/Double_Asteroid_Redirection_Test).
+
+According to NASA’s [official documentation](https://cneos.jpl.nasa.gov/about/neo_groups.html), a PHA is technically termed using parameters that measure the asteroid’s characteristics and then make a decision if the asteroid is considered hazardous based on certain thresholds. Specifically, all asteroids with an Earth Minimum Orbit intersection Distance (MOID) of 0.05 au or less and an absolute magnitude (H) of 22.0 or less are considered Potentially Hazardous Asteroids (PHAs). In other words, asteroids that can’t get any closer to the Earth (i.e., MOID) than 0.05 au (roughly 7,480,000km) or are smaller than about 140m in diameter (i.e., H=22.0) are not considered PHAs.
+ 
+The current dataset that we have contains 90,000 rows. Each row represents a NEO identified by an ID and name. Out of these 90,000 rows, 9,000 of them are hazardous and 81,000 of them are non-hazardous. This dataset does not contain null values. Apart from the hazardous target variable, our dataset contains 5 numerical variables that can help identify if the asteroid is hazardous or not. These 5 variables are:
+
+1.	est_diameter_min (km) – estimated minimum diameter of the NEO
+1.	est_diameter_max (km) – estimated maximum diameter of the NEO
+1.	relative_velocity – the velocity (in km/seconds) with which the NEO was travelling with respect to Earth 
+1.	miss_distance – distance (in km) by which the asteroid missed the Earth’s surface
+1.	absolute_magnitude (H) – signifies the brightness of the asteroid
+
+Out of these 5 variables, we have 3 variables that play a primary role in determining if the asteroid was harmful or not. Those are:
+
+1.	relative_velocity
+1.	miss_distance
+1.	absolute_magnitude
+
+Throughout the rest of this RMD file, we go over each of these 3 variables in complete depth to answer our SMART question – what are some of the statistical characteristics of Nearest Earth Objects, over the last 22 years, in terms of relative velocity, miss distance and absolute magnitude, that make them hazardous or not?
+
+
+```{r setup, include=FALSE}
+# some of common options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+# knitr::opts_chunk$set(include = F)
+# knitr::opts_chunk$set(echo = TRUE)
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+# use scipen=999 to prevent scientific notation at all times
+```
+
+
+# Let's explore the dataset
+```{r import_data, results='markup', echo=FALSE}
+neo <- data.frame(read.csv("neo.csv", header = TRUE))
+```
+Displaying the structure of the data:
+```{r, results='markup', echo=FALSE}
+print(str(neo))
+```
+Displaying the first 6 rows of the dataset:
+```{r, results='markup', echo=FALSE}
+print(head(neo))
+```
+The number of NA values in the dataset => `r sum(is.na(neo))`
+
+
+Now, we split the dataset into 2 dataframes - one for hazardous and other for non-hazardous. This is to ease out the tests performed.
+
+```{r split dataset, results='markup', echo=FALSE}
+hazardous = neo %>% filter(hazardous=="True")
+non_hazardous = neo %>% filter(hazardous=="False")
+```
+The dimensions of hazardous asteroids dataframe: `r dim(hazardous)`
+
+The dimensions of non_hazardous asteroids dataframe: `r dim(non_hazardous)`
+
+# Performing measures of central tendency using Summary
+
+Summary of all asteroids is as follows:
+```{r summary, results='markup', echo=FALSE}
+summary(neo)
+```
+
+
+# Distinct Values
+Now, there are multiple asteroids with the same "id" and "name" in the dataset. 
+This could happen due to multiple tests being performed on the asteroids or it could be another different reason. We shall remove these in order for the dataset to follow the rules of a relational dataset. 
+We use the group_by function provided in R to do so and we take the mean of those asteroids with the same id and name so we don't have any risk of losing the data.
+```{r distinct_hazardous_groupby, results='markup', echo=FALSE}
+hazardous_grouped = hazardous %>% group_by(name) %>% summarise(absolute_magnitude = mean(absolute_magnitude), relative_velocity = mean(relative_velocity), miss_distance = mean(miss_distance), hazardous = min(hazardous))
+```
+The dimension of the hazardous dataframe after using only distinct asteroid ID's => `r dim(hazardous_grouped)`
+
+
+
+```{r distinct_non_hazardous_groupby, results='markup', echo=FALSE}
+non_hazardous_grouped = non_hazardous %>% group_by(name) %>% summarise(absolute_magnitude = mean(absolute_magnitude), relative_velocity = mean(relative_velocity), miss_distance = mean(miss_distance), hazardous = min(hazardous))
+```
+The dimension of the non_hazardous dataframe after using only distinct asteroid ID's => `r dim(non_hazardous_grouped)`
+
+
+# Relative Velocity
+
+Relative velocity of an NEO is defined as its velocity compared to the earth. It is measured in kilometers per second. 
+
+![alt text here](relative_velocity_formula.png)
+
+```{r, results='markup', echo=FALSE}
+library(tidyverse)
+neo <- read.csv("neo.csv")
+hazardous = neo %>% filter(hazardous=="True")
+safe = neo %>% filter(hazardous=="False")
+xkablesummary(hazardous[c("relative_velocity")])
+xkablesummary(safe[c("relative_velocity")])
+
+ttest2sample_neo = t.test(hazardous$relative_velocity,safe$relative_velocity)
+ttest2sample_neo
+
+ttestsafe95 = t.test(x=safe$relative_velocity, conf.level = .95)
+ttestsafe99 = t.test(x=safe$relative_velocity, conf.level = .99)
+ttestsafe95$conf.int
+ttestsafe99$conf.int
+
+ttesthaz95 = t.test(x=hazardous$relative_velocity, conf.level = .95)
+ttesthaz99 = t.test(x=hazardous$relative_velocity, conf.level = .99)
+ttesthaz95$conf.int
+ttesthaz99$conf.int
+
+anovavelocity = aov(formula = relative_velocity ~ hazardous, data = neo)
+xkabledply(anovavelocity)
+
+tukeyvelocity <- TukeyHSD(anovavelocity)
+tukeyvelocity
+
+plot(tukeyvelocity, las=1 , col="brown", title = "TUKEY Multiple Comparison of Means for Relative Velocity")
+```
+
+For basic descriptive statistics, measures of central tendency, mean and median, are all higher in the "hazardous" group compared to the objects deemed "safe." 
+
+Using a 2-sample T-Test shows that the difference in means in two groups are significant at the 95% confidence level, as the P-value is smaller than .05.
+
+After constructing confidence intervals at 95% and 99%, we see that the HIGHEST relative velocity in the "safe" condition is lower than the LOWEST relative velocity in the "hazardous" condition, giving more support to the correlation of high relative velocity associated with whether a NEO is hazardous. 
+
+```{r, results='markup', echo=FALSE}
+
+qqnorm(hazardous$relative_velocity, col='red', main = 'QQ Plot for Velocity of Hazardous Objects')
+qqline(hazardous$relative_velocity)
+
+qqnorm(safe$relative_velocity, col='green', main = 'QQ Plot for Velocity of Safe Objects')
+qqline(safe$relative_velocity)
+
+ggplot(data=hazardous, aes(relative_velocity)) + geom_histogram(col='green',fill="red")+labs(x= "Velocity (km/s)", y="Frequency") + labs(title="Frequency Distribution of Hazardous Relative Velocities")
+
+ggplot(data=safe, aes(relative_velocity)) + geom_histogram(col='red',fill="green")+labs(x= "Velocity (km/s)", y="Frequency") + labs(title="Frequency Distribution of Safe Relative Velocities")
+```
+
+```{r, results='markup', echo=FALSE}
+velocity_outlier = outlierKD2(hazardous,relative_velocity, rm=TRUE)
+safe_outlier = outlierKD2(safe,relative_velocity, rm=TRUE)
+```
+
+Relative velocity is one of the observable characteristics of the Kaggle dataset that other researchers in the field have looked at previously (Araujo 2014). Their research sought to identify the frequency of that asteroids would cross into potentially critical radii (“close encounters”) and, alongside impact parameter, relative velocity was one of the components the researchers examined. The researchers also used histograms to showcase the relative velocity component of their exploratory data analysis. With just a brief glance, the histograms clearly show that asteroids of the Atens groups suffered encounters with a higher relative velocity compared to the Amor group. Their overall findings were similar to ours, with asteroids and their satellites having a higher relative velocity representing the greatest probability of surviving the critical radii in the close encounter. 
+
+To estimate an asteroid’s destructive damage to Earth and her human-built infrastructure, we have baseline comparisons (as horrible as it is) in the area of high-yield nuclear weapons. To approximate asteroid impact energy as comparable to the yield of a high-explosive weapon in the megaton range, we would need to know the asteroid mass. Basic physics kinematics states that kinetic energy is a function of mass and velocity squared, KE= ½ MV^2. A one megaton explosion measures the explosive energy of one million tons of TNT, Trinitrotoluene, and is 4.18x10^15 Joules (Krehl 2008). The atomic bomb that dropped on Hiroshima was only 15 kilotons. Asteroids would yield easily in the megatons (Tonry 2010). Research on the former also requires mass to finalize the estimate of energy, and the scientists have a method to derive mass via density (usually taken as ∼2–3 g cm-3). They use the information to estimate the destructive capacity, as well as proposing early warning detection systems using what they know about asteroid destructive impact. Our work would equally benefit if we had asteroid mass (or a way to derive it).  
+
+
+# Miss Distance
+
+## 1. Descriptive statistics:
+
+The miss distance, in kilometers relative to earth, was one of the variables of interest. We believe that this was one of the key factors that might influence the decision of whether an asteroid is hazardous or not. First, we began by sub-setting the data into `neo_tyler` with the variables of interest: `name`,`miss_distance` and `hazardous`. Further, we thought that it would seem appropriate to check whether the data confirms the range, of distance relative to earth, that Potentially Hazardous Asteroids PHAs have: "Potentially Hazardous Asteroids: NEAs whose Minimum Orbit Intersection Distance (MOID) with the Earth is **0.05** au or less" (NASA) Therefore, by converting the units from kilometers to astronomical units (au) and using the `summary()` function, we are able to confirm that these are indeed PHAs as defined by NASA. For the matters of this project, we thought that expressing the variable `miss_distance` in millions of kilometers relative to earth would be more comprehensible to the audience. 
+
+```{r, results='markup', echo=FALSE}
+#Tyler 
+#2. Descriptive statistics:
+
+neo_tyler = neo[c(2, 6, 10)] #getting the columns name, miss_distance and hazardous
+neo_tyler$hazardous = factor(neo_tyler$hazardous)
+#str(neo_tyler) #showing the data types
+
+neo_tyler$miss_distance = neo_tyler$miss_distance/1.496e+8 #Expressing unit in au (astronomical units)
+
+summary(neo_tyler$miss_distance) #summarizing only numeric variable in au
+
+neo_tyler$miss_distance = (neo_tyler$miss_distance*1.496e+8)/1000000
+```
+
+After properly sub-setting the data, we noticed from the excel file that there are 27423 unique values. Thus, we thought that it would be most opportune to take an average of the multiple `miss_distance` values that appeared from the data set. To do this average by unique values, we used the `group_by()` function, which allowed us to simplify the data to our needs.
+
+```{r, results='markup', echo=FALSE}
+library(dplyr)
+grouped_data = neo %>% group_by(name) %>% summarise(miss_distance = mean(miss_distance), hazardous = min(hazardous))
+```
+
+Finally, we further subsetted grouped data to hazardous `neo_h_tyler` and not hazardous `neo_nh_tyler`. In this manner, we can properly seek to answer our S.M.A.R.T. question in hand. Starting first by observing the descriptive statistics with the `summary()` function for each subset. As observed from these figures, the range is roughly the same for both subsets, due to the NASA definition of PHAs, and the mean of the hazardous data is slightly higher than those not hazardous. Also, we thought that it would be opportune to look at the variation inside of the subsetted data, by using the `sd()` function, and as it turns out, hazardous asteroids tend to be less variable than those that are not. Given that there is a slight difference in the means and variability, we thought that this would be the best moment visualize this output by means of a boxplot and histograms.
+
+```{r, results='markup', echo=FALSE}
+
+neo_h_tyler = subset(grouped_data, grouped_data$hazardous == 'True') #Sub-setting the data into hazardous 
+neo_nh_tyler = subset(grouped_data, grouped_data$hazardous == 'False') #Sub-setting the data into non-hazardous
+
+neo_h_tyler$miss_distance = neo_h_tyler$miss_distance/1000000
+neo_nh_tyler$miss_distance = neo_nh_tyler$miss_distance/1000000
+
+summary(neo_h_tyler$miss_distance) #Summary of hazardous miss_distance
+summary(neo_nh_tyler$miss_distance) #Summary of non-hazardous miss_distance
+
+## 4. [When Applicable] Measures of variance / sd
+
+#For neo_h_tyler as a whole:
+sd(neo_h_tyler$miss_distance)
+
+#For neo_nh_tyler as a whole:
+sd(neo_nh_tyler$miss_distance)
+```
+
+## 2. Graphical interpretations of the data:
+
+(Notation: h - for hazardous subset and nh- for not hazardous subset)
+
+- Boxplots: As expected, the boxplots show that slight difference in means for h is slightly higher than for those nh. Additionally, the ranges are identical for both groups, however their frequencies might differ, so let's take a look at the relative frequency histograms.
+
+```{r, results='markup', echo=FALSE}
+#Tyler 
+#3. Graphical interpretations of the data:
+
+#Histograms:
+library(ggplot2)
+#Boxplot:
+#For neo_h_tyler and neo_nh_tyler as a whole:
+ggplot(neo_tyler, aes(y=neo_tyler$miss_distance, x=neo_tyler$hazardous))+
+  geom_boxplot(colour = c('green', 'red'))+
+  labs(title = 'Boxplot of `Miss distance` vs hazardous variable')+
+  xlab('Hazardous variable')+
+  ylab('Miss distance (millions of kilometers)')+
+  scale_x_discrete(labels = c('Not hazardous','hazardous'))
+```
+
+- Relative Frequency Histograms: As for the Relative Frequency Histograms, there are both similitudes and differences in terms of relative frequency for both the h and nh subset. The h data appears to follow a normal distribution, with the majority of the frequency revolving around the 40 million kilometer mark, however there are higher frequencies in the 0-20 million kilometer mark. Similarly, the nh presents the same features as the h data, however the values in the 0-20 million kilometer mark are more exaggerated. Therefore, since the distribution for h looks closely to a normal distribution, we thought that this would be the most appropriate moment to run normality tests.   
+
+```{r, results='markup', echo=FALSE}
+#Histograms:
+
+#For neo_h_tyler as a whole:
+ggplot(neo_h_tyler, aes(miss_distance, ..count../sum(..count..)*100))+
+  geom_histogram(col = 'black', fill ='red', bins = 20)+
+  labs(title = 'Histogram of relative frequency for `Miss Distance` of hazardous (n=2173)')+
+  xlab('Miss distance (millions of kilometers)')+
+  ylab('Frequency %')
+
+#For neo_nh_tyler as a whole:
+ggplot(neo_nh_tyler, aes(miss_distance, ..count../sum(..count..)*100))+
+  geom_histogram(col = 'black', fill ='green', bins = 20)+
+  labs(title = 'Histogram of relative frequency for `Miss Distance` of not hazardous (n=25250)')+
+  xlab('Miss distance (millions of kilometers)')+
+  ylab('Frequency %')
+```
+
+## 3. Normality Tests:
+
+- QQ-plots: As expected from the relative frequency histograms, the QQ-plot for h closely follows the QQ-line (meaning that is follows a normal distribution), however the values clearly depart in that 0-20 million kilometer range. On the other hand, the nh data is clearly under dispersed, visualized by the s-shape in the QQ-plot, meaning that there is excess negative kurtosis in the subsetted data. Now, that we have looked at the visual component of these subsets, we thought it would be best to revisit the difference in the means to check if h and nh have the same sampling distribution for when it comes to `miss_distance`.
+
+```{r, results='markup', echo=FALSE}
+#QQ-plots:
+#For neo_h_tyler as a whole:
+qqnorm(neo_h_tyler$miss_distance, col='red', main = 'QQ Plot for `miss_distance` of hazardous (n=2173)')
+qqline(neo_h_tyler$miss_distance)
+#For neo_nh_tyler as a whole:
+qqnorm(neo_nh_tyler$miss_distance, col='green', main = 'QQ Plot for `miss_distance` of not hazardous (n=25250)')
+qqline(neo_nh_tyler$miss_distance)
+#Clearly under-dispersed data, or platykurtic distribution, having negative excess kurtosis. 
+```
+
+## 4. T-test/Intervals
+
+Two-tailed t-tests:
+
+- @ 95% confidence level: The lower confidence level for h (which recall had the highest mean between h and nh) was of 35.2 millions of kilometers, and as for the highest confidence level for nh was of 30.2 millions of kilometer. Since there is a 5 million kilometer difference in the means, we thought that it would be best to check at a higher confidence level.
+
+```{r, results='markup', echo=FALSE}
+#Tyler 
+#6. [When Applicable] T-test/Intervals
+
+#For neo_h_tyler as a whole at 95%:
+t.test(neo_h_tyler$miss_distance)
+
+#For neo_nh_tyler as a whole at 95%:
+t.test(neo_nh_tyler$miss_distance)
+
+#Do not overlap, lets try again at a much higher level of confidence
+```
+
+-@ 99% confidence level: The lower confidence level for h was of 35.1 millions of kilometers, and as for the highest confidence level for nh was of 30.3 millions of kilometer. This 4.8 million kilometer difference indicates that these means might not come from the same sampling distribution. Thus, we further explored this differences with an ANOVA test.
+
+```{r, results='markup', echo=FALSE}
+#Tyler 
+#For neo_h_tyler as a whole at 99%:
+t.test(neo_h_tyler$miss_distance, conf.level = 0.99)
+
+#For neo_nh_tyler as a whole at 99%:
+t.test(neo_nh_tyler$miss_distance, conf.level = 0.99)
+
+#Still do not overlap, which raises the question of whether these means are different 
+#So, lets run ANOVA...
+```
+
+## 5. ANOVA & Post-Hoc Tukey:
+
+ANOVA: The ANOVA test yielded highly significant results. As indicated by the extremely small p-value of 2e-16, these means do not come from the same sampling distribution, and therefore are different in their nature. So, to get a more accurate reading on these differences we ran a Post-Hoc Tukey test to know by how much precisely do these means differ.
+
+```{r, results='markup', echo=FALSE}
+#Tyler 
+#6. [When Applicable] ANOVA
+
+#H0: The mean for h and nh are the same 
+#H1: The means are NOT the same
+
+grouped_data$miss_distance = grouped_data$miss_distance/1000000
+
+anova_tyler = aov(grouped_data$miss_distance ~ grouped_data$hazardous, neo_tyler)
+summary(anova_tyler)
+```
+
+Post-Hoc Tukey: In the Post-Hoc Tukey test we were able to identify that the means differ by roughly 5 million kilometers to 7 million kilometers.
+
+```{r, results='markup', echo=FALSE}
+# Post-Hoc Follow-up
+tukeyAoV <- TukeyHSD(anova_tyler)
+tukeyAoV
+```
+
+## 6. Conclusion: 
+
+-Hazardous NEOs, on average, are slightly further away from Earth (roughly by 5-7 M kilometers) than those not hazardous. 
+
+-Hazardous NEOs vary less in their distance relative to Earth (σ < σ) than those not hazardous. 
+
+-Hazardous NEOs do not share the same sampling distribution of distance relative to Earth as those not hazardous.
+
+
+# Absolute Magnitude 
+Absolute magnitude is the third variable that we will be go over in detail. According to Wikipedia, it is defined as a measure of magnitude (brightness) of a celestial object as it would be seen at a standard distance of 10 parsecs. 
+Absolute magnitude plays a very important role in determining if the NEO is hazardous or not. This is because the inverse square law states that the brightness of a light source decreases with the square of the size of that asteroid. Hence, this would indicate that absolute magnitude variable must have a certain relationship with the diameter variables of the asteroid (est_diameter_min and est_diameter_max). 
+Also, from the official [NASA documentation](https://cneos.jpl.nasa.gov/about/neo_groups.html), it is worth pointing out that the absolute magnitude of the PHAs is always less than 22.0.
+Throughout the rest of the documentation, we shall go over plots and perform tests to prove whether the hazardous asteroid's absolute magnitude lies below 22.0 H or no. 
+
+Before that, we shall explore some key characteristics of absolute_magnitude in detail:
+
+Summary of absolute_magintude of hazardous asteroid: 
+```{r, results='markup', echo=FALSE}
+summary(hazardous$absolute_magnitude)
+```
+
+Summary of absolute_magnitude of non-hazardous NEO: 
+```{r, results='markup', echo=FALSE}
+summary(non_hazardous$absolute_magnitude)
+```
+ 
+## Let's find the mode
+
+```{r finding_mode, results='markup', echo=FALSE}
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+```
+Mode of absolute_magnitude in neo dataset => `r getmode(neo$absolute_magnitude)`
+
+Mode of absolute_magnitude in hazardous dataset => `r getmode(hazardous$absolute_magnitude)`
+
+Mode of absolute_magnitude in non-hazardous dataset => `r getmode(non_hazardous$absolute_magnitude)`
+
+
+## Measures of Variance and Standard Deviation
+
+
+Variation of absolute_magnitude of hazardous NEO => `r var(hazardous$absolute_magnitude)`
+
+Variation of absolute_magnitude of non_hazardous NEO => `r var(non_hazardous$absolute_magnitude)`
+
+
+
+Standard deviation of absolute_magnitude of hazardous NEO => `r sd(hazardous$absolute_magnitude)`
+
+Standard deviation of absolute_magnitude of non_hazardous NEO => `r sd(non_hazardous$absolute_magnitude)`
+
+## Graphical understanding using Plots
+
+```{r graphical_representation, echo=FALSE}
+ggplot(hazardous, aes(x=absolute_magnitude)) + geom_histogram(bins=70, color="black", fill="red") + labs(x="Absolute Magnitude", y="Frequency Count", title = "Histogram of absolute_magnitude of hazardous asteroids")
+
+ggplot(non_hazardous, aes(x=absolute_magnitude)) + geom_histogram(bins=70, color="black", fill="green") + labs(x="Absolute Magnitude", y="Frequency Count", title = "Histogram of absolute_magnitude of non_hazardous asteroids")
+
+ggplot(neo, aes(x=absolute_magnitude, y=hazardous)) + geom_point(col = "lightblue") + labs(x="Absolute Magnitude", y="Hazardous", title = "Scatter plot for hazardous vs non-hazardous asteroids")
+
+qqnorm(hazardous$absolute_magnitude, main="QQ Plot of the absolute magnitude of hazardous asteroids")
+
+qqnorm(non_hazardous$absolute_magnitude, main="QQ Plot of the absolute magnitude of non-hazardous asteroids")
+```
+
+Note - We see that the absolute_magnitude for hazardous NEO lies mostly between 19 to 22. While that of the non-hazardous asteroids gnerally lies between 23 to 27. 
+
+This proves what was mentioned in NASA documentation that Potentially Hazardous Asteroids have an absolute magnitude of 22.0 H or less.
+
+## Outliers
+Knowing if the dataset has outliers is a good way to know if the dataset has any "bad data". And it is essential to know or keep track of the number of records that represent outliers. To keep track of the outliers in the dataset, we shall use outlierKD2 function:
+```{r hazardous_outlier_removal, results='markup', echo=FALSE}
+hazardous_outlier_removed = outlierKD2(hazardous,absolute_magnitude, qqplt=TRUE, rm=TRUE)
+```
+The dimension of the hazardous dataframe after removing outliers: `r dim(hazardous_outlier_removed)`
+
+
+```{r outlier_non_hazardous_removal, results='markup', echo=FALSE}
+non_hazardous_outlier_removed = outlierKD2(non_hazardous,absolute_magnitude, qqplt=TRUE, rm=TRUE)
+```
+
+The dimension of the non_hazardous dataframe after removing outliers: `r dim(non_hazardous_outlier_removed)`
+
+## T-Tests
+Now, with all outliers removed and distinct values extracted, we can perform t-tests.
+
+T-Tests on hazardous dataframe:
+```{r t-test-hazardous, results='markup', echo=FALSE}
+t.test(hazardous_grouped$absolute_magnitude)
+
+```
+
+T-Tests on non_hazardous dataframe:
+```{r t-test-non-hazardous, results='markup', echo=FALSE}
+t.test(non_hazardous_grouped$absolute_magnitude)
+```
+
+## Contingency Table
+Now, we shall validate the above by printing the Contingency table.
+The contingency table of hazardous is below:
+```{r frequency_cut_hazardous, results='markup', echo=FALSE}
+table(cut(hazardous_grouped$absolute_magnitude,seq(16,23,0.5)))
+```
+
+We see a higher frequency of values falling in the interval 21-22 for hazardous asteroids. However, as noticed in the plots drawn, the plot is left skewed. Hence, the average/mean shifted a bit towards the left. 
+
+Here too, we can confirm that the PHAs in our dataset follow the official NASA documentation.
+
+The contingency table of non_hazardous is below:
+```{r frequency_cut_non_hazardous, results='markup', echo=FALSE}
+table(cut(non_hazardous_grouped$absolute_magnitude,seq(16,32,0.5)))
+```
+
+We see a higher frequency of values falling in the interval 24-25 for non_hazardous.
+
+## Anova Test:
+For anova test, we need 2 samples of equal size - one from hazardous and another from non-hazardous
+```{r aov_test, results='markup', echo=FALSE}
+# creating a third column in both dataframes to account for categorical variable - hazardous
+non_hazardous_grouped$hazardous=0
+hazardous_grouped$hazardous=1
+non_hazardous_sample = sample(1:nrow(non_hazardous_grouped), size=2105)
+summary(aov(absolute_magnitude ~ hazardous, data=rbind(hazardous_grouped, non_hazardous_sample)))
+```
+
+Observation - the p-value is a small number (<0.001) which indicates that we can reject the null hypothesis and confirm that the mean for hazardous and non-hazardous NEOs is not the same. 
+Note that the p-value is same from results obtained in anova test and t-test.
+
+Here, we finally prove that our dataset has the correct definition of PHAs and that they all have an absolute magnitude less than 22 H. 
+
+
+## Correlation with Diameter
+A correlation plot is used to determine how close each variable is to the other. We know from earlier that the absolute magnitude is inversely related to the size of the NEO. We shall draw a correlation plot with est_diameter_min and est_diameter_max to verify and see if it does hold significance or not?
+```{r correlation_magnitude_diameter, results='markup', echo=FALSE}
+library(corrplot)
+corrplot(cor(hazardous %>% select(absolute_magnitude, est_diameter_min, est_diameter_max), method = "pearson"), method="number", title="Pearson correlation of absolute magnitude with diameter variables", mar=c(1,1,1,1))
+```
+
+As noted in the above correlation plot, we see that the the min and max estimated diameter is closely related to the absolute magnitude. It is inversely related. This makes sense because absolute magnitude (brightness of a NEO) indicates the size of the asteroid in question. And hence, we can say that the bigger the size of the asteroid, lesser the absolute magnitude (brighter the star), and thus potentially more hazardous is the asteroid.
+
+
+
+# Overall Correlation Plots:
+After exploring each of these 3 variables, we shall now see their correlation with that of our target variable - hazardous. We shall draw both - Pearson and Spearman correlation plots. 
+
+```{r, results='markup', echo=FALSE}
+hazardous$hazardous = as.integer(as.logical(hazardous$hazardous))
+non_hazardous$hazardous = as.integer(as.logical(non_hazardous$hazardous))
+
+corrplot(cor(rbind(hazardous, non_hazardous) %>% select(absolute_magnitude, miss_distance, relative_velocity, est_diameter_min, est_diameter_max, hazardous ), method= "pearson"), method="number", title = "Pearson Correlation", outline = TRUE, mar = c(1,1,1,1))
+
+corrplot(cor(rbind(hazardous, non_hazardous) %>% select(absolute_magnitude, miss_distance, relative_velocity, est_diameter_min, est_diameter_max, hazardous ), method= "spearman"), method="number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
+```
+
+Here, we see that hazardous variable has a higher correlation with absolute magnitude, and the diameter variables. This means that the size and brightness of the asteroid plays a very significant role in deciding if the asteroid is hazardous or not. These variables are followed by relative velocity and miss distance.
+
+# PROJECT 2
+# EDA ENDS
+# Splitting and Sampling
+```{r, results='markup'}
+set.seed(123)
+non_hazardous = non_hazardous[sample(nrow(non_hazardous),nrow(hazardous)),]
+nasa_model_data= rbind(hazardous, non_hazardous)
+nrow(nasa_model_data)
+
+
+
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(nasa_model_data))
+
+## set the seed to make your partition reproducible
+set.seed(123)
+train_data_size <- sample(seq_len(nrow(nasa_model_data)), size = smp_size)
+
+
+nasa_train.labels = nasa_model_data[train_data_size,c("hazardous")]
+nasa_test.labels = nasa_model_data[-train_data_size,c("hazardous")]
+
+nasa_model_data = nasa_model_data %>% select(est_diameter_min, est_diameter_max, relative_velocity, miss_distance, absolute_magnitude)
+nasa_train <- nasa_model_data[train_data_size,]
+nasa_test <- nasa_model_data[-train_data_size,]
+
+```
+
+Comment about why we are doing normalisation
+
+# Normalisation
+```{r, results='markup'}
+nasa_train = scale(nasa_train, center = TRUE, scale = TRUE)
+nasa_test = scale(nasa_test, center = TRUE, scale = TRUE)
+```
+
+# KNN
+```{r, results='markup'}
+library(class)
+knn.5 <- knn(train=nasa_train, test=nasa_test, cl=nasa_train.labels, k=5)
+ACC.5=100 * sum(nasa_test.labels == knn.5)/NROW(nasa_test.labels)
+paste0("Accuracy = ", ACC.5)
+```
+
+
+# Limitations
+
+The `neo.csv` data set posed limitations in the variables, description and dictionary. Since the dataset was obtained from a web-based environment, kaggle, we had insufficient variables, a poor description of the dataset and no data dictionary provided. In terms of the variables provided, it would have been ideal to have one regarding the trajectory towards, or away, from earth, as well as other potentially hazardous, or not hazardous, variables. Nevertheless, we were restricted to just using the three variables that were quantifiable in order to characterize the potential of it being hazardous. In retrospect, just using these three variables might have been an over-simplification in our determination of a hazard. On the other hand, the description of the dataset is very limited given the constraint of using Kaggle. It would have been better if the dataset was obtained straight from a NASA website or API, however this was not possible. It would have been a huge perk to know how these variables are being used by NASA professionals, what characterizes an instance to be recorded multiple times, and why they initially attributed the boolean value for Hazardous. Finally, when it came to providing a data dictionary, the kaggle website did not have one. Thus, we had to do our own research as to what these variables meant, and what they were describing. Therefore, with insufficient variables, a poor description and no data dictionary it was difficult to infer, or fully understand, the root of a hazardous or not hazardous asteroid to fully answer our question.
+
+
+# References:
+
+- Kaggle Dataset (Kaggle):
+Vani, S. (2022, June 17). NASA - Nearest Earth objects. Kaggle. Retrieved November 2, 2022, from https://www.kaggle.com/datasets/sameepvani/nasa-nearest-earth-objects 
+- Center for Near Earth Objects Studies (CNEOS):
+NASA. (n.d.). Neo basics. NASA. Retrieved November 2, 2022, from https://cneos.jpl.nasa.gov/about/neo_groups.html 
+- NASA (NASA):
+Bardan, R. (2022, October 11). NASA confirms Dart Mission Impact Changed Asteroid's motion in space. NASA. Retrieved November 2, 2022, from https://www.nasa.gov/press-release/nasa-confirms-dart-mission-impact-changed-asteroid-s-motion-in-space 
+- Araujo, R. A. N., & Winter, O. C. (2014). Near-Earth asteroid binaries in close encounters with the Earth. Astronomy & Astrophysics, 566, A23.
+- Peter O. K. Krehl (2008). History of Shock Waves, Explosions and Impact: A Chronological and Biographical Reference. Springer Science & Business Media. p. 404. ISBN 978-3-540-30421-0.
+- Tonry, J. L. (2010). An early warning system for asteroid impact. Publications of the Astronomical Society of the Pacific, 123(899), 58.
