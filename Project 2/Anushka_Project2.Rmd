@@ -1,0 +1,150 @@
+---
+title: "Anushka-Project2"
+author: "Anushka"
+date: "2022-12-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(tidyverse)
+library(ggplot2)
+library(ezids)
+```
+
+```{r, results='markup'}
+ipums = read_csv("ipums.csv")
+str(ipums)
+
+#Dropping unnecessary columns: YEAR, EDUCD and EMPSTATD
+library(dplyr)
+ipums = select(ipums, c(2:5,7,9:10))
+
+str(ipums)
+
+
+sum(is.na(ipums))
+```
+
+# EDA
+
+## EMPSTAT reformatting
+```{r, results='markup'}
+#Reformatting target column: EMPSTAT
+
+#Checking for unique values
+unique(ipums$EMPSTAT)
+
+#According to IPUMS, codes are the following:
+# 0 = N/A
+# 1 = Employed
+# 2 = Unemployed
+# 3 = Not in labor force
+
+#Dropping 0 and 3 values
+ipums$EMPSTAT <- replace(ipums$EMPSTAT, ipums$EMPSTAT == 0, NA)
+ipums$EMPSTAT <- replace(ipums$EMPSTAT, ipums$EMPSTAT == 3, NA)
+
+ipums <- na.omit(ipums)
+
+#Reformatting column to:
+# 0 = Unemployed
+# 1 = Employed
+
+ipums$EMPSTAT[ipums$EMPSTAT == 2] <- 0
+
+ipums$EMPSTAT <- as.factor(ipums$EMPSTAT)
+```
+
+## GENDER reformatting
+```{r, results='markup'}
+# 1 => Male
+# 2 => Female
+
+library("dplyr")
+
+# renaming the column
+ipums = ipums %>% rename("GENDER" = "SEX")
+print(colnames(ipums))
+
+dat <- data.frame(table(ipums$GENDER,ipums$EMPSTAT))
+names(dat) <- c("GENDER","EMPSTAT","Count")
+# for purpose of plotting
+dat["GENDER"] = c("Male","Female","Male","Female")
+
+# plotting
+ggplot(data=dat, aes(x=GENDER, y=Count)) + geom_bar(aes(fill = EMPSTAT), stat="identity")+ scale_fill_discrete(labels = c("UNEMPLOYED", "EMPLOYED")) 
+
+
+```
+
+
+# INDUSTRY
+
+```{r, results='markup'}
+# INDNAICS
+ipums = ipums %>% mutate(INDUSTRY = 
+  case_when(
+    startsWith(INDNAICS,"0") ~ "Not_Applicable",
+    startsWith(INDNAICS,"1") ~ "Agriculture",
+    startsWith(INDNAICS,"2") ~ "Utilities",
+    startsWith(INDNAICS,"3") ~ "Manufacturing",
+    startsWith(INDNAICS,"4") ~ "Retail",
+    startsWith(INDNAICS,"5") ~ "Finance",
+    startsWith(INDNAICS,"6") ~ "Education and Health",
+    startsWith(INDNAICS,"7") ~ "Hospitalioty",
+    startsWith(INDNAICS,"8") ~ "Other",
+    startsWith(INDNAICS,"9") ~ "Military"
+  )
+)
+
+# plotting
+
+gender_name <- c(
+  `1`="Male",
+  `2`="Female"
+)
+gender_labeller <- function(variable,value){
+  return(gender_name[value])
+}
+ggplot(ipums, aes(INDUSTRY, ..count..)) + geom_bar(aes(fill = EMPSTAT), position = "dodge") +
+facet_wrap(GENDER ~ ., labeller = gender_labeller) + theme(axis.text.x = element_text(angle = 45, hjust=1))+ scale_fill_discrete(labels = c("UNEMPLOYED", "EMPLOYED"))
+
+```
+
+# SMOTE
+
+```{r, results='markup'}
+
+#library(DMwR)
+# install.packages("smotefamily")
+library(smotefamily)
+
+ipums_anushka_x=ipums_anushka %>% select("GENDER","AGE","CITIZEN","EDUC","WORKEDYR")
+smote <- SMOTE(ipums_anushka_x, ipums["EMPSTAT"])
+
+```
+
+# Downsampling
+```{r, results='markup'}
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
