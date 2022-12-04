@@ -430,6 +430,7 @@ Now, with all outliers removed and distinct values extracted, we can perform t-t
 T-Tests on hazardous dataframe:
 ```{r t-test-hazardous, results='markup', echo=FALSE}
 t.test(hazardous_grouped$absolute_magnitude)
+
 ```
 
 T-Tests on non_hazardous dataframe:
@@ -495,6 +496,19 @@ corrplot(cor(rbind(hazardous, non_hazardous) %>% select(absolute_magnitude, miss
 ```
 
 Here, we see that hazardous variable has a higher correlation with absolute magnitude, and the diameter variables. This means that the size and brightness of the asteroid plays a very significant role in deciding if the asteroid is hazardous or not. These variables are followed by relative velocity and miss distance.
+
+# PROJECT 2
+# EDA ENDS
+# Splitting and Sampling
+```{r, results='markup'}
+set.seed(123)
+non_hazardous = non_hazardous[sample(nrow(non_hazardous),nrow(hazardous)),]
+nasa_model_data= rbind(hazardous, non_hazardous)
+nrow(nasa_model_data)
+
+
+
+```
 
 # Limitations
 
