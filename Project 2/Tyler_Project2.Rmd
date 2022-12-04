@@ -29,16 +29,16 @@ options(scientific=T, digits = 3)
 ```{r , echo=FALSE}
 #Importing `ipums.csv` dataset
 getwd()
-ipums = data.frame(read.csv('ipums.csv'))
+ipums = data.frame(read.csv('ipums2.csv'))
 
 str(ipums)
 
 #Dropping unnecessary columns: YEAR, EDUCD and EMPSTATD
 library(dplyr)
-ipums = select(ipums, c(2:6,8,10))
+ipums = select(ipums, c(2:6,8))
 
 str(ipums)
-
+xkabledplyhead(ipums, title = 'Ipums dataset')
 #Using random sample data (as recommended) with new `ipumsdf`
 #set.seed(123)
 #ipumsdf = ipums[ sample(nrow(ipums),100000), ]
@@ -96,17 +96,19 @@ sort(unique(ipums$EDUC))
 # 0 = No schooling
 # 1 = 4th grade (Elementary-school)
 # 2 = 5th, 6th, 7th or 8th grade (Middle-school)
-# 3 = 9th grade
-# 4 = 10th grade
-# 5 = 11th grade 
-# 6 = 12th grade (High-school)
-# 7 = 1st year college
-# 8 = 2nd year college
-# 9 = 4th year college (Undergraduate)
-# 10 = 5+ year college (Masters or PHD)
+# 3 = 9th, 10th and 11th grade (High-school dropouts)
+# 4 = 12th grade (High-school)
+# 5 = 1st, 2nd year college (College dropouts)
+# 6 = 4th year college (Undergraduate)
+# 7 = 5+ year college (Masters or PHD)
 
-ipums$EDUC[ipums$EDUC == 10] <- 9
-ipums$EDUC[ipums$EDUC == 11] <- 10
+ipums$EDUC[ipums$EDUC == 4] <- 3
+ipums$EDUC[ipums$EDUC == 5] <- 3
+ipums$EDUC[ipums$EDUC == 6] <- 4
+ipums$EDUC[ipums$EDUC == 7] <- 5
+ipums$EDUC[ipums$EDUC == 8] <- 5
+ipums$EDUC[ipums$EDUC == 10] <- 6
+ipums$EDUC[ipums$EDUC == 11] <- 7
 
 ipums$EDUC <- as.factor(ipums$EDUC)
 ```
@@ -122,8 +124,8 @@ table1
 barplot( prop.table(table1, 2),
          legend.text = TRUE,
          ylab = "Proportion employment",
-         xlab = "Highest level of education attained",
-         names.arg=c('No schooling','Elementary-S','Middle-S','9th','10th','11th','High-S','1st-C','2nd-C','Undergraduate','Masters'),
+         xlab = "Highest education attained",
+         names.arg=c('No schooling','Elementary-S','Middle-S','High-D','High-S','College-D','Undergraduate','Masters'),
          args.legend = list(x = "topright",
                           legend = c("Employed", "Unemployed"),
                            inset = c(- 0.06, -0.13),
@@ -207,4 +209,27 @@ barplot( prop.table(table2, 2),
 
 ```
 
+
+```{r, results='markup'}
+#EDA 
+
+
+#Age histogram plot by employment 
+Unemployed = subset(ipums, ipums$EMPSTAT == 0)
+
+Employed = subset(ipums, ipums$EMPSTAT == 1)
+
+library('ggplot2')
+ggplot(Unemployed, aes(AGE, ..count../sum(..count..)*100))+
+  geom_histogram(col = 'black', fill ='#FF9999', bins = 20)+
+  labs(title = 'Relative frequency histogram of age by Unemployed')+
+  xlab('Age')+
+  ylab('Frequency %')
+
+ggplot(Employed, aes(AGE, ..count../sum(..count..)*100))+
+  geom_histogram(col = 'black', fill ='#009E73', bins = 20)+
+  labs(title = 'Relative frequency histogram of age by Employed')+
+  xlab('Age')+
+  ylab('Frequency %')
+```
 

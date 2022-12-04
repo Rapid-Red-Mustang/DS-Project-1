@@ -288,7 +288,7 @@ ggplot(ipums_model_data, aes(INDUSTRY, ..count..)) + geom_bar(aes(fill = EMPSTAT
 ipums_model_data = ipums_model_data %>% select(GENDER, AGE, MARST, CITIZEN, INDUSTRY, EDUC, EMPSTAT)
 
 # refactor into numeric
-ipums_model_data$EMPSTAT = as.numeric(ipums_model_data$EMPSTAT)
+#ipums_model_data$EMPSTAT = as.numeric(ipums_model_data$EMPSTAT)
 ipums_model_data$INDUSTRY = as.numeric(unclass(as.factor(ipums_model_data$INDUSTRY)))
 
 
