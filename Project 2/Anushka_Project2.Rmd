@@ -27,7 +27,7 @@ str(ipums)
 
 #Dropping unnecessary columns: YEAR, EDUCD and EMPSTATD
 library(dplyr)
-ipums = select(ipums, c(2:5,7,9:10))
+ipums = select(ipums, c(2:5,8,9:10))
 
 str(ipums)
 
@@ -122,7 +122,7 @@ facet_wrap(GENDER ~ ., labeller = gender_labeller) + theme(axis.text.x = element
 ```
 
 # SMOTE
-
+## DO NOT RUN
 ```{r, results='markup'}
 
 #library(DMwR)
@@ -136,8 +136,37 @@ smote <- SMOTE(ipums_anushka_x, ipums["EMPSTAT"])
 
 # Downsampling
 ```{r, results='markup'}
+set.seed(123)
+ipums_employed = (ipums %>% filter(EMPSTAT==1))
+ipums_not_employed = (ipums %>% filter(EMPSTAT==0))
 
+ipums_sample_employed = ipums_employed[sample(nrow(ipums_employed),nrow(ipums_not_employed)),]
+ipums_model_data= rbind(ipums_sample_employed, ipums_not_employed)
+nrow(ipums_model_data)
 ```
+
+
+# Splitting into train and test data
+
+```{r, results='markup'}
+
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(ipums_model_data))
+
+## set the seed to make your partition reproducible
+set.seed(123)
+train_data_size <- sample(seq_len(nrow(ipums_model_data)), size = smp_size)
+
+train <- ipums_model_data[train_data_size, ]
+test <- ipums_model_data[-train_data_size, ]
+
+print("Number of employed people in training set = ", str(nrow(train %>% filter(EMPSTAT==1))))
+print("Number of unemployed people in training set = ", str(nrow(train %>% filter(EMPSTAT==0))))
+
+print("Number of employed people in testing set = ", str(nrow(test %>% filter(EMPSTAT==1))))
+print("Number of unemployed people in testing set = ", str(nrow(test %>% filter(EMPSTAT==0))))
+```
+
 
 ## Including Plots
 
