@@ -508,7 +508,39 @@ nrow(nasa_model_data)
 
 
 
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(nasa_model_data))
+
+## set the seed to make your partition reproducible
+set.seed(123)
+train_data_size <- sample(seq_len(nrow(nasa_model_data)), size = smp_size)
+
+
+nasa_train.labels = nasa_model_data[train_data_size,c("hazardous")]
+nasa_test.labels = nasa_model_data[-train_data_size,c("hazardous")]
+
+nasa_model_data = nasa_model_data %>% select(est_diameter_min, est_diameter_max, relative_velocity, miss_distance, absolute_magnitude)
+nasa_train <- nasa_model_data[train_data_size,]
+nasa_test <- nasa_model_data[-train_data_size,]
+
 ```
+
+Comment about why we are doing normalisation
+
+# Normalisation
+```{r, results='markup'}
+nasa_train = scale(nasa_train, center = TRUE, scale = TRUE)
+nasa_test = scale(nasa_test, center = TRUE, scale = TRUE)
+```
+
+# KNN
+```{r, results='markup'}
+library(class)
+knn.5 <- knn(train=nasa_train, test=nasa_test, cl=nasa_train.labels, k=5)
+ACC.5=100 * sum(nasa_test.labels == knn.5)/NROW(nasa_test.labels)
+paste0("Accuracy = ", ACC.5)
+```
+
 
 # Limitations
 
