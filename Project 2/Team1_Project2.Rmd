@@ -26,6 +26,8 @@ options(scientific=T, digits = 3)
 # use scipen=999 to prevent scientific notation at all times
 ```
 
+# Reading the dataset
+
 ```{r , echo=FALSE}
 #Importing `ipums.csv` dataset
 getwd()
@@ -45,6 +47,8 @@ str(ipums)
 #ipumsdf
 ```
 
+
+# Reformatting target variable - EMPSTAT
 
 ```{r, results='markup'}
 #Reformatting target column: EMPSTAT
@@ -73,6 +77,8 @@ ipums$EMPSTAT[ipums$EMPSTAT == 2] <- 0
 ipums$EMPSTAT <- as.factor(ipums$EMPSTAT)
 ```
 
+
+# EDA: EDUC
 ```{r, results='markup'}
 #Reformatting columns: EDUC and WORKEDYR
 
@@ -111,6 +117,7 @@ ipums$EDUC[ipums$EDUC == 11] <- 10
 ipums$EDUC <- as.factor(ipums$EDUC)
 ```
 
+
 ```{r, results='markup'}
 #EDA 
 
@@ -132,6 +139,7 @@ barplot( prop.table(table1, 2),
 
 ```
 
+# EDA: AGE
 ```{r, results='markup'}
 #EDA 
 
@@ -154,11 +162,8 @@ ggplot(Employed, aes(AGE, ..count../sum(..count..)*100))+
   ylab('Frequency %')
 ```
 
+# EDA: MARST (Marital Status)
 ```{r, results='markup'}
-#Reformatting columns: EDUC and WORKEDYR
-
-#Checking for unique values
-sort(unique(ipums$EDUC))
 
 #According to IPUMS, codes are the following:
 # 1 = Married, spouse present
@@ -208,3 +213,109 @@ barplot( prop.table(table2, 2),
 ```
 
 
+# EDA: GENDER
+```{r, results='markup'}
+# 1 => Male
+# 2 => Female
+
+library("dplyr")
+
+# renaming the column
+ipums = ipums %>% rename("GENDER" = "SEX")
+print(colnames(ipums))
+
+dat <- data.frame(table(ipums$GENDER,ipums$EMPSTAT))
+names(dat) <- c("GENDER","EMPSTAT","Count")
+# for purpose of plotting
+dat["GENDER"] = c("Male","Female","Male","Female")
+
+# plotting
+ggplot(data=dat, aes(x=GENDER, y=Count)) + geom_bar(aes(fill = EMPSTAT), stat="identity")+ scale_fill_discrete(labels = c("UNEMPLOYED", "EMPLOYED")) 
+
+
+```
+# EDA: INDUSTRY
+```{r, results='markup'}
+# INDNAICS
+ipums = ipums %>% mutate(INDUSTRY = 
+  case_when(
+    startsWith(INDNAICS,"0") ~ "Not_Applicable",
+    startsWith(INDNAICS,"1") ~ "Agriculture",
+    startsWith(INDNAICS,"2") ~ "Utilities",
+    startsWith(INDNAICS,"3") ~ "Manufacturing",
+    startsWith(INDNAICS,"4") ~ "Retail",
+    startsWith(INDNAICS,"5") ~ "Finance",
+    startsWith(INDNAICS,"6") ~ "Education and Health",
+    startsWith(INDNAICS,"7") ~ "Hospitalioty",
+    startsWith(INDNAICS,"8") ~ "Other",
+    startsWith(INDNAICS,"9") ~ "Military"
+  )
+)
+
+# plotting
+
+gender_name <- c(
+  `1`="Male",
+  `2`="Female"
+)
+gender_labeller <- function(variable,value){
+  return(gender_name[value])
+}
+
+ggplot(ipums, aes(INDUSTRY, ..count..)) + geom_bar(aes(fill = EMPSTAT), position = "dodge") +
+facet_wrap(GENDER ~ ., labeller = gender_labeller) + theme(axis.text.x = element_text(angle = 45, hjust=1))+ scale_fill_discrete(labels = c("UNEMPLOYED", "EMPLOYED"))
+
+```
+
+# Downsampling
+```{r, results='markup'}
+set.seed(123)
+ipums_employed = (ipums %>% filter(EMPSTAT==1))
+ipums_not_employed = (ipums %>% filter(EMPSTAT==0))
+
+ipums_sample_employed = ipums_employed[sample(nrow(ipums_employed),nrow(ipums_not_employed)),]
+ipums_model_data= rbind(ipums_sample_employed, ipums_not_employed)
+nrow(ipums_model_data)
+
+# Let's plot our industry vs gender vs empstatus again to see the distribution after sampling
+ggplot(ipums_model_data, aes(INDUSTRY, ..count..)) + geom_bar(aes(fill = EMPSTAT), position = "dodge") + facet_wrap(GENDER ~ ., labeller = gender_labeller) + theme(axis.text.x = element_text(angle = 45, hjust=1))+ scale_fill_discrete(labels = c("UNEMPLOYED", "EMPLOYED"))
+```
+
+# Splitting into train and test data
+
+```{r, results='markup'}
+
+ipums_model_data = ipums_model_data %>% select(GENDER, AGE, MARST, CITIZEN, INDUSTRY, EDUC, EMPSTAT)
+
+# refactor into numeric
+ipums_model_data$EMPSTAT = as.numeric(ipums_model_data$EMPSTAT)
+ipums_model_data$INDUSTRY = as.numeric(unclass(as.factor(ipums_model_data$INDUSTRY)))
+
+
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(ipums_model_data))
+
+## set the seed to make your partition reproducible
+set.seed(123)
+train_data_size <- sample(seq_len(nrow(ipums_model_data)), size = smp_size)
+
+train <- ipums_model_data[train_data_size,]
+test <- ipums_model_data[-train_data_size,]
+
+train.labels = ipums_model_data[train_data_size,c("EMPSTAT")]
+test.labels = ipums_model_data[-train_data_size,c("EMPSTAT")]
+
+paste0("Number of employed people in training set = ", (nrow(train %>% filter(EMPSTAT==1))))
+paste0("Number of unemployed people in training set = ", (nrow(train %>% filter(EMPSTAT==0))))
+
+paste0("Number of employed people in testing set = ", (nrow(test %>% filter(EMPSTAT==1))))
+paste0("Number of unemployed people in testing set = ", (nrow(test %>% filter(EMPSTAT==0))))
+```
+
+# KNN
+```{r, results='markup'}
+library(class)
+knn.27 <- knn(train=train, test=test, cl=train.labels, k=27)
+ACC.27=100 * sum(test.labels == knn.27)/NROW(test.labels)
+paste0("Accuracy = ", ACC.27)
+```
