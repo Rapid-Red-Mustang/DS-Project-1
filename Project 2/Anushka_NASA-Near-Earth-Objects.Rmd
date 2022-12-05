@@ -554,7 +554,7 @@ for (kval in seq(11,50,2)) {
   cm = confusionMatrix(nasa_pred, as.factor(nasa_test.labels) ) # from caret library
   cmaccu = cm$overall['Accuracy']
   cmt = data.frame(k=kval, Total.Accuracy = cmaccu, row.names = NULL ) # initialize a row of the metrics 
-  ResultDf = rbind(ResultDf, cmt*100)
+  ResultDf = rbind(ResultDf, cmt)
 }
 xkabledply(ResultDf, "Total Accuracy Summary:")
 
@@ -612,12 +612,12 @@ library("pROC")
 classifier <- randomForest( formula = hazardous~., data=nasa_train_randomforest)
 print(classifier)
 
-pred_1 = predict(classifier, nasa_test_randomforest)
+pred_1 = predict(classifier, nasa_test_randomforest, type="prob")
 paste0("Accuracy = ",mean(nasa_test_randomforest$hazardous == pred_1))
 
-nasa_test_randomforest$prob = pred_1
-nasa_test_randomforest$hazardous = as.numeric(nasa_test_randomforest$hazardous)
-nasa_test_randomforest$prob = as.numeric(nasa_test_randomforest$prob)
+nasa_test_randomforest$prob = as.numeric(unlist(as.data.frame(pred_1)[2]))
+nasa_test_randomforest$hazardous = as.numeric(as.character(nasa_test_randomforest$hazardous))
+nasa_test_randomforest$prob = round(nasa_test_randomforest$prob)
 h <- roc(hazardous~prob, data=nasa_test_randomforest)
 print(h)
 plot(h,main="ROC Curve for Random Forest",col=2,lwd=2)
