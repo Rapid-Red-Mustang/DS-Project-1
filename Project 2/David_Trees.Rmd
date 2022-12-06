@@ -1,0 +1,36 @@
+---
+title: "David_Trees"
+output: html_document
+date: "2022-12-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("rpart", repos='http://cran.us.r-project.org') # Classification trees, rpart(formula, data=, method=,control=)
+library(rpart)
+```
+
+```{r, echo = T, fig.dim=c(6,4)}
+set.seed(1)
+neo <- read.csv("neo.csv")
+neodf <- as.data.frame(neo)
+neofit <- rpart(neodf ~ relative_velocity + absolute_magnitude, data=neodf, method="class", control = list(maxdepth = 4) )
+# kyphosisfit <- rpart(Kyphosis ~ Age + Number + Start, data=kyphosis, method="class", control = {rpart.control list} )
+# rpart.control(maxdepth = 30, minsplit = 20, minbucket = round(minsplit/3), cp = 0.01, maxcompete = 4, maxsurrogate = 5, usesurrogate = 2, xval = 10, surrogatestyle = 0, ...)
+printcp(neofit) # display the results 
+plotcp(neofit) # visualize cross-validation results 
+summary(neofit) # detailed summary of splits
+
+# plot tree 
+plot(neofit, uniform=TRUE, main="Classification Tree for NEO")
+text(neofit, use.n=TRUE, all=TRUE, cex=.8)
+
+```
+
+```{r, include=T}
+install.packages("caret", repos='http://cran.us.r-project.org')
+library(caret)
+```
