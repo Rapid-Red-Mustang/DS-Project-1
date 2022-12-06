@@ -16,8 +16,7 @@ library(rpart)
 ```{r, echo = T, fig.dim=c(6,4)}
 set.seed(1)
 neo <- read.csv("neo.csv")
-neodf <- as.data.frame(neo)
-neofit <- rpart(neodf ~ relative_velocity + absolute_magnitude, data=neodf, method="class", control = list(maxdepth = 4) )
+neofit <- rpart(hazardous ~ relative_velocity + absolute_magnitude + miss_distance, data=neo, method="class", control = list(maxdepth = 4) )
 # kyphosisfit <- rpart(Kyphosis ~ Age + Number + Start, data=kyphosis, method="class", control = {rpart.control list} )
 # rpart.control(maxdepth = 30, minsplit = 20, minbucket = round(minsplit/3), cp = 0.01, maxcompete = 4, maxsurrogate = 5, usesurrogate = 2, xval = 10, surrogatestyle = 0, ...)
 printcp(neofit) # display the results 
