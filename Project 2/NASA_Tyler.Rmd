@@ -525,13 +525,61 @@ nasa_test <- nasa_model_data[-train_data_size,]
 
 ```
 
-Comment about why we are doing normalisation
+Comment about why we are doing normalization
 
-# Normalisation
+# Normalization
 ```{r, results='markup'}
 nasa_train = scale(nasa_train, center = TRUE, scale = TRUE)
 nasa_test = scale(nasa_test, center = TRUE, scale = TRUE)
+
+#SMOTE 
+library(DMwR)
 ```
+
+#Logistic Regression 
+
+```{r, results='markup'}
+
+neo_glm <- select(neo, c(3:6,9:10))
+neo_glm$hazardous[neo_glm$hazardous == 'False'] <- 0
+neo_glm$hazardous[neo_glm$hazardous == 'True'] <- 1
+
+neo_glm$hazardous <- as.factor(neo_glm$hazardous)
+
+balanced.train <- SMOTE(hazardous~., neo_glm, perc.over = 100)
+
+loadPkg("leaps")
+reg.leaps <- regsubsets(hazardous~., data = balanced.train, nbest = 1, method = "exhaustive")
+plot(reg.leaps, scale = "bic", main = "BIC")
+
+glm.nasa <- glm(formula = hazardous ~ miss_distance + absolute_magnitude + est_diameter_max + est_diameter_min, data = balanced.train, family = binomial)
+summary(glm.nasa)
+
+#Confusion matrix
+loadPkg("ModelMetrics")
+xkabledply( confusionMatrix(actual= glm.nasa$y, predicted= glm.nasa$fitted.values), title = "Confusion matrix from Logit Model" )
+
+#McFadden's value
+loadPkg("pscl") 
+model1r2 = pR2(glm.nasa)
+model1r2
+
+#Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC)
+loadPkg("pROC")
+prob1 = predict(glm.nasa, type ='response')
+glm.nasa$prob = prob1
+h = roc(hazardous ~ prob1, balanced.train)
+auc(h)
+plot(h)
+
+glm.nasa$coefficients
+```
+# Pairs
+```{r, results='markup'}
+loadPkg('psych')
+pairs.panels(neo_glm)
+```
+
 
 # KNN
 ```{r, results='markup'}
