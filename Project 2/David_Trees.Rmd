@@ -17,8 +17,6 @@ library(rpart)
 set.seed(1)
 neo <- read.csv("neo.csv")
 neofit <- rpart(hazardous ~ relative_velocity + absolute_magnitude + miss_distance, data=neo, method="class", control = list(maxdepth = 4) )
-# kyphosisfit <- rpart(Kyphosis ~ Age + Number + Start, data=kyphosis, method="class", control = {rpart.control list} )
-# rpart.control(maxdepth = 30, minsplit = 20, minbucket = round(minsplit/3), cp = 0.01, maxcompete = 4, maxsurrogate = 5, usesurrogate = 2, xval = 10, surrogatestyle = 0, ...)
 printcp(neofit) # display the results 
 plotcp(neofit) # visualize cross-validation results 
 summary(neofit) # detailed summary of splits
@@ -29,7 +27,29 @@ text(neofit, use.n=TRUE, all=TRUE, cex=.8)
 
 ```
 
+```{r}
+post(neofit, file = "neoTree.ps", title = "Classification Tree for NEO")
+```
+
 ```{r, include=T}
 install.packages("caret", repos='http://cran.us.r-project.org')
 library(caret)
+```
+
+```{r}
+confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
+```
+
+```{r}
+install.packages("ISLR",repos='http://cran.us.r-project.org')
+library(ISLR)
+install.packages("tree",repos='http://cran.us.r-project.org')
+library("tree")
+treefit <- tree(log(miss_distance) ~ relative_velocity  + absolute_magnitude , data=neo)
+summary(treefit)
+```
+
+```{r}
+plot(treefit) 
+text(treefit,cex=0.75)
 ```
