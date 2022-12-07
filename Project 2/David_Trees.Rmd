@@ -36,7 +36,15 @@ install.packages("caret", repos='http://cran.us.r-project.org')
 library(caret)
 ```
 
-```{r}
+```{r fancyplot}
+install.packages("rpart.plot", repos='http://cran.us.r-project.org')
+library(rpart.plot)
+install.packages("rattle", repos='http://cran.us.r-project.org')
+library(rattle)
+fancyRpartPlot(neofit)
+```
+
+```{r, include=FALSE}
 confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
 ```
 
@@ -53,3 +61,4 @@ summary(treefit)
 plot(treefit) 
 text(treefit,cex=0.75)
 ```
+
