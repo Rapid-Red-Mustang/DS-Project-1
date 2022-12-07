@@ -1,0 +1,134 @@
+---
+title: "DATS 6101 Team 1 - Project 2"
+author: "Tyler Wallett, Anushka Vuppala and David Li"
+# date: "today"
+date: "`r Sys.Date()`"
+output: 
+  rmdformats::readthedown:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+    
+---
+```{r init, include=F}
+library(tidyverse)
+library(ezids)
+```
+# Introduction
+<span style="color: Blue;"> Our research topic aims to perform explorartory data analysis on the Nearest Earth Objects (NEO) dataset recorded by NASA. This particular dataset includes thousands of labeled observations, over the last 22 years, across multiple attributes that each aim to describe a specific object. Borrowing from the humor of the recent film *Don’t Look Up* by Adam Mckay and NASA’s success in the Double Asteroid Redirection Test (DART) mission, we thought that further describing and exploring this dataset would be opportune.</span> 
+
+The EDA performed can help with the early detection of an asteroid. With the early detection, NASA can take quick remedies to help eliminate the threat. NASA’s DART mission (Double Asteroid Redirection Test) was done for the same purpose. It was designed to deflect an asteroid with a certain momentum by hitting it head-on or attempting to slow it down. More can be read online from this [article](https://en.wikipedia.org/wiki/Double_Asteroid_Redirection_Test).
+
+According to NASA’s [official documentation](https://cneos.jpl.nasa.gov/about/neo_groups.html), a PHA is technically termed using parameters that measure the asteroid’s characteristics and then make a decision if the asteroid is considered hazardous based on certain thresholds. Specifically, all asteroids with an Earth Minimum Orbit intersection Distance (MOID) of 0.05 au or less and an absolute magnitude (H) of 22.0 or less are considered Potentially Hazardous Asteroids (PHAs). In other words, asteroids that can’t get any closer to the Earth (i.e., MOID) than 0.05 au (roughly 7,480,000km) or are smaller than about 140m in diameter (i.e., H=22.0) are not considered PHAs.
+ 
+The current dataset that we have contains 90,000 rows. Each row represents a NEO identified by an ID and name. Out of these 90,000 rows, 9,000 of them are hazardous and 81,000 of them are non-hazardous. This dataset does not contain null values. Apart from the hazardous target variable, our dataset contains 5 numerical variables that can help identify if the asteroid is hazardous or not. These 5 variables are:
+
+1.	est_diameter_min (km) – estimated minimum diameter of the NEO
+1.	est_diameter_max (km) – estimated maximum diameter of the NEO
+1.	relative_velocity – the velocity (in km/seconds) with which the NEO was travelling with respect to Earth 
+1.	miss_distance – distance (in km) by which the asteroid missed the Earth’s surface
+1.	absolute_magnitude (H) – signifies the brightness of the asteroid
+
+Out of these 5 variables, we have 3 variables that play a primary role in determining if the asteroid was harmful or not. Those are:
+
+1.	relative_velocity
+1.	miss_distance
+1.	absolute_magnitude
+
+Throughout the rest of this RMD file, we go over each of these 3 variables in complete depth to answer our SMART question – what are some of the statistical characteristics of Nearest Earth Objects, over the last 22 years, in terms of relative velocity, miss distance and absolute magnitude, that make them hazardous or not?
+
+
+```{r setup, include=FALSE}
+# some of common options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+# knitr::opts_chunk$set(include = F)
+# knitr::opts_chunk$set(echo = TRUE)
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+# use scipen=999 to prevent scientific notation at all times
+```
+
+
+# Let's explore the dataset
+```{r import_data, results='markup', echo=FALSE}
+neo <- data.frame(read.csv("neo.csv", header = TRUE))
+```
+Displaying the structure of the data:
+```{r, results='markup', echo=FALSE}
+print(str(neo))
+```
+Displaying the first 6 rows of the dataset:
+```{r, results='markup', echo=FALSE}
+print(head(neo))
+```
+The number of NA values in the dataset => `r sum(is.na(neo))`
+
+
+Now, we split the dataset into 2 dataframes - one for hazardous and other for non-hazardous. This is to ease out the tests performed.
+
+```{r split dataset, results='markup', echo=FALSE}
+hazardous = neo %>% filter(hazardous=="True")
+non_hazardous = neo %>% filter(hazardous=="False")
+```
+The dimensions of hazardous asteroids dataframe: `r dim(hazardous)`
+
+The dimensions of non_hazardous asteroids dataframe: `r dim(non_hazardous)`
+
+# Performing measures of central tendency using Summary
+
+Summary of all asteroids is as follows:
+```{r summary, results='markup', echo=FALSE}
+summary(neo)
+```
+
+# Splitting of dataset
+```{r, results='markup'}
+set.seed(123)
+
+neo_variables = (neo %>% select(est_diameter_min, est_diameter_max, relative_velocity, absolute_magnitude, miss_distance, hazardous))
+neo_variables$hazardous[neo_variables$hazardous == "True"] <- 1
+neo_variables$hazardous[neo_variables$hazardous == "False"] <- 0
+neo_variables$hazardous = as.numeric(neo_variables$hazardous)
+
+library(smotefamily)
+smote = SMOTE(neo_variables[1:5], neo_variables$hazardous)
+newdata = smote$data
+newdata = newdata %>% rename(hazardous=class)
+newdata$hazardous = as.numeric(newdata$hazardous)
+
+
+smp_size <- floor(0.75 * nrow(newdata))
+
+## set the seed to make your partition reproducible
+set.seed(222)
+train_data_size <- sample(seq_len(nrow(newdata)), size = smp_size)
+
+
+nasa_train.labels = newdata[train_data_size,c("hazardous")]
+nasa_test.labels = newdata[-train_data_size,c("hazardous")]
+
+nasa_train <- newdata[train_data_size,]
+nasa_test <- newdata[-train_data_size,]
+
+nasa_train = scale(nasa_train[,1:5], center = TRUE, scale = TRUE)
+nasa_test = scale(nasa_test[,1:5], center = TRUE, scale = TRUE)
+
+# Simple model
+library(class)
+loadPkg("gmodels")
+loadPkg("gmodels")
+loadPkg("FNN")
+loadPkg("caret")
+knn.5 <- knn(train=nasa_train, test=nasa_test, cl=nasa_train.labels, k=5)
+print(100 * sum(nasa_test.labels == knn.5)/NROW(nasa_test.labels))
+confusionMatrix(knn.5, as.factor(nasa_test.labels) )
+```
+
