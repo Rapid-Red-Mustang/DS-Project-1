@@ -212,7 +212,27 @@ nasa_test = scale(nasa_test[,1:3], center = TRUE, scale = TRUE)
 basicKNN5()
 ```
 
-From the above, we can see that we have finally received a higher rate of Recall. Now, this is only with k=5. Let's explore k value with a defined set of ranges. Ideally, k has a value between 5 and 20. We shall run a for loop to get accuracy of each odd valued k to find the optimal one.
+From the above, we can see that we have finally received a higher rate of Recall. 
+
+
+# Count Plot of data points after SMOTE
+```{r, results='markup'}
+tab=matrix(c(sum(neo$hazardous=="True"), sum(neo$hazardous=="False"), sum(newdata$hazardous==1), sum(newdata$hazardous==0)), ncol = 2, byrow = TRUE)
+colnames(tab) <- c('Hazardous','Non Hazardous')
+rownames(tab) <- c('Orginial Data','Smote Data')
+tab <- as.table(tab)
+my_data <- as.data.frame(tab) 
+ggplot(my_data,                                   
+       aes(x = Var1,
+           y = Freq, fill= Var2)) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  ggtitle('Count of hazardous and non-hazardous after sampling') +
+  xlab('Data') +
+  ylab('Data points') 
+
+```
+
+Now, this is only with k=5. Let's explore k value with a defined set of ranges. Ideally, k has a value between 5 and 20. We shall run a for loop to get accuracy of each odd valued k to find the optimal one.
 
 # KNN
 ```{r, results='markup'}

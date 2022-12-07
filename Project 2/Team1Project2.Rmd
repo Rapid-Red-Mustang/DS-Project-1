@@ -1,5 +1,5 @@
 ---
-title: "DATS 6101 Team 1 - Project 2"
+title: "DATS 6101 Team 1 - Project 1"
 author: "Tyler Wallett, Anushka Vuppala and David Li"
 # date: "today"
 date: "`r Sys.Date()`"
@@ -19,6 +19,11 @@ output:
 ```{r init, include=F}
 library(tidyverse)
 library(ezids)
+library(class)
+loadPkg("gmodels")
+loadPkg("gmodels")
+loadPkg("FNN")
+loadPkg("caret")
 ```
 # Introduction
 <span style="color: Blue;"> Our research topic aims to perform explorartory data analysis on the Nearest Earth Objects (NEO) dataset recorded by NASA. This particular dataset includes thousands of labeled observations, over the last 22 years, across multiple attributes that each aim to describe a specific object. Borrowing from the humor of the recent film *Don’t Look Up* by Adam Mckay and NASA’s success in the Double Asteroid Redirection Test (DART) mission, we thought that further describing and exploring this dataset would be opportune.</span> 
@@ -89,17 +94,100 @@ Summary of all asteroids is as follows:
 summary(neo)
 ```
 
-# Splitting of dataset
+
+
+# PROJECT 2
+
+Before we begin any modeling, it is good practice to have a training and test accuracy.
+
+# Sampling of data
+## Helper functions
 ```{r, results='markup'}
+Standardization <- function(data) {
+  return (scale(data[,1:3], center = TRUE, scale = TRUE))
+}
+
+basicKNN5 <- function() {
+  knn.5 <- knn(train=nasa_train, test=nasa_test, cl=nasa_train.labels, k=5)
+  print(100 * sum(nasa_test.labels == knn.5)/NROW(nasa_test.labels))
+  confusionMatrix(knn.5, as.factor(nasa_test.labels), mode="everything")
+}
+```
+
+Below is the R code of performing the split without any sampling technique used.
+We would also be using the training and testing data to check the accuracy of a base KNN model. We would implement this KNN model with the k value equal to 5 for the purpose of comparison between different sampling techniques.
+
+## No sampling technique used:
+```{r, results='markup'}
+#str(neo)
 set.seed(123)
 
-neo_variables = (neo %>% select(est_diameter_min, est_diameter_max, relative_velocity, absolute_magnitude, miss_distance, hazardous))
-neo_variables$hazardous[neo_variables$hazardous == "True"] <- 1
-neo_variables$hazardous[neo_variables$hazardous == "False"] <- 0
-neo_variables$hazardous = as.numeric(neo_variables$hazardous)
+neo_no_sampling = (neo %>% select(relative_velocity, absolute_magnitude, miss_distance, hazardous))
+smp_size <- floor(0.75 * nrow(neo_no_sampling))
+train_data_size <- sample(seq_len(nrow(neo_no_sampling)), size = smp_size)
+
+
+nasa_train.labels = neo_no_sampling[train_data_size,c("hazardous")]
+nasa_test.labels = neo_no_sampling[-train_data_size,c("hazardous")]
+
+neo_no_sampling = neo_no_sampling %>% select(relative_velocity, miss_distance, absolute_magnitude)
+nasa_train <- neo_no_sampling[train_data_size,]
+nasa_test <- neo_no_sampling[-train_data_size,]
+
+# Standardization
+nasa_train = Standardization(nasa_train)
+nasa_test = Standardization(nasa_test)
+
+basicKNN5()
+
+```
+The above shows an accuracy of 89.5% which initially sounds great. But when we draw a confusion matrix on the above and report other evaluation metrics, we see a 30% Specificity. This is not surprising as the amount of data in minority class (hazardous) is very minimum. 
+
+The next sampling technique we can use is called downsampling. This ensures that the data that we choose has equal proportions of hazardous and non-hazardous asteroids.
+For the purpose of implementing downsampling, we will retain all the rows in hazardous and randomly sample equal number of rows from non-hazardous. In other words, we would be bringing down the number of rows in non-hazardous from ~80,000 to ~8,000 rows.
+
+## Downsampling
+```{r, results='markup'}
+set.seed(123)
+non_hazardous = non_hazardous[sample(nrow(non_hazardous),nrow(hazardous)),]
+neo_downsampling= rbind(hazardous, non_hazardous)
+nrow(neo_downsampling)
+
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(neo_downsampling))
+
+## set the seed to make your partition reproducible
+set.seed(123)
+train_data_size <- sample(seq_len(nrow(neo_downsampling)), size = smp_size)
+
+nasa_train.labels = neo_downsampling[train_data_size,c("hazardous")]
+nasa_test.labels = neo_downsampling[-train_data_size,c("hazardous")]
+
+neo_downsampling = neo_downsampling %>% select(relative_velocity, miss_distance, absolute_magnitude)
+nasa_train <- neo_downsampling[train_data_size,]
+nasa_test <- neo_downsampling[-train_data_size,]
+
+# Standardization
+nasa_train = Standardization(nasa_train)
+nasa_test = Standardization(nasa_test)
+
+basicKNN5()
+```
+From downsampling result above, we see that the results have become more realisti. In other words, we see that our Specificity rate has increased to 92% which is a great indicator of a great model. However, one biggest disadvantage of downsampling is loss of data. We are training the model with insufficient amount of data.
+
+The next obvious sampling technique is upsampling. One such case of upsampling is SMOTE. Smote created artificial data points to bring up the data points in minority class.
+
+## SMOTE
+```{r,results='markup'}
+set.seed(123)
+
+neo_smote = (neo %>% select(relative_velocity, absolute_magnitude, miss_distance, hazardous))
+neo_smote$hazardous[neo_smote$hazardous == "True"] <- 1
+neo_smote$hazardous[neo_smote$hazardous == "False"] <- 0
+neo_smote$hazardous = as.numeric(neo_smote$hazardous)
 
 library(smotefamily)
-smote = SMOTE(neo_variables[1:5], neo_variables$hazardous)
+smote = SMOTE(neo_smote[1:3], neo_smote$hazardous)
 newdata = smote$data
 newdata = newdata %>% rename(hazardous=class)
 newdata$hazardous = as.numeric(newdata$hazardous)
@@ -118,17 +206,104 @@ nasa_test.labels = newdata[-train_data_size,c("hazardous")]
 nasa_train <- newdata[train_data_size,]
 nasa_test <- newdata[-train_data_size,]
 
-nasa_train = scale(nasa_train[,1:5], center = TRUE, scale = TRUE)
-nasa_test = scale(nasa_test[,1:5], center = TRUE, scale = TRUE)
+nasa_train = scale(nasa_train[,1:3], center = TRUE, scale = TRUE)
+nasa_test = scale(nasa_test[,1:3], center = TRUE, scale = TRUE)
 
-# Simple model
-library(class)
-loadPkg("gmodels")
-loadPkg("gmodels")
-loadPkg("FNN")
-loadPkg("caret")
-knn.5 <- knn(train=nasa_train, test=nasa_test, cl=nasa_train.labels, k=5)
-print(100 * sum(nasa_test.labels == knn.5)/NROW(nasa_test.labels))
-confusionMatrix(knn.5, as.factor(nasa_test.labels) )
+basicKNN5()
 ```
+
+From the above, we can see that we have finally received a higher rate of Recall. 
+
+
+# Count Plot of data points after SMOTE
+```{r, results='markup'}
+tab=matrix(c(sum(neo$hazardous=="True"), sum(neo$hazardous=="False"), sum(newdata$hazardous==1), sum(newdata$hazardous==0)), ncol = 2, byrow = TRUE)
+colnames(tab) <- c('Hazardous','Non Hazardous')
+rownames(tab) <- c('Orginial Data','Smote Data')
+tab <- as.table(tab)
+my_data <- as.data.frame(tab) 
+ggplot(my_data,                                   
+       aes(x = Var1,
+           y = Freq, fill= Var2)) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  ggtitle('Count of hazardous and non-hazardous after sampling') +
+  xlab('Data') +
+  ylab('Data points') 
+
+```
+
+Now, this is only with k=5. Let's explore k value with a defined set of ranges. Ideally, k has a value between 5 and 20. We shall run a for loop to get accuracy of each odd valued k to find the optimal one.
+
+# KNN
+```{r, results='markup'}
+ResultDf = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
+set.seed(222)
+for (kval in seq(1,18,2)) {
+  nasa_pred <- knn(train = nasa_train, test = nasa_test, cl=nasa_train.labels, k=kval)
+  cm = confusionMatrix(nasa_pred, as.factor(nasa_test.labels) ) # from caret library
+  cmaccu = cm$overall['Accuracy']
+  cmt = data.frame(k=kval, Total.Accuracy = cmaccu, row.names = NULL ) # initialize a row of the metrics 
+  ResultDf = rbind(ResultDf, cmt)
+}
+xkabledply(ResultDf, "Total Accuracy Summary:")
+
+```
+
+Now, with the accuracies defined for all possible k values, we shall draw a plot and see the accuracies.
+```{r, results='markup'}
+ggplot(data=ResultDf, aes(x=k, y=Total.Accuracy,group=1)) +
+  geom_line(color="#aa0022", size=1.75) +
+  geom_point(color="#aa0022", size=3.5) +
+  ggtitle("K value against their accuracy in KNN model") +
+  labs(x="K value", y="Accuracy of K value") +
+  theme(axis.title.y = element_text(size=10, family="Trebuchet MS", color="#666666")) +
+  theme(axis.text = element_text(size=14, family="Trebuchet MS")) +
+  theme(plot.title = element_text(size=20, family="Trebuchet MS", face="bold", hjust=0, color="#666666"))
+
+
+```
+From the above, we see that when k=9, we get the good accuracy of 87.6%
+Please note that despite having higher accuracies beyond k=9, we should keep in mind that having a higher k value leads to overfitting of the model and thus, we need to be mindful when choosing our k value.
+
+Now, taking k=9, we should perform model evaulation.
+
+## KNN model Evaluation
+```{r, results='markup'}
+
+knn.9 <- knn(train=nasa_train, test=nasa_test, cl=nasa_train.labels, k=9, prob=TRUE)
+print(confusionMatrix(knn.9, as.factor(nasa_test.labels), mode = "everything"))
+
+library(pROC)
+
+print(roc(nasa_test.labels, attributes(knn.9)$prob))
+
+plot(roc(nasa_test.labels, attributes(knn.9)$prob),
+     print.thres = T,
+     print.auc=T)
+
+
+```
+From the above, we see that the recall we obtain is 80% which is better than all of the above sampling techniques we have used above. In addition to this, we also see that the area under the curve is 0.706. Ideally, anything over 0.8 is considered good fit model. But area under the curve = 0.706 is considered an acceptable model. In conclusion, the KNN model with SMOTE sampling resulted in a good accuracy turnout. In addition to this, when k=11, we get the best accuracy in comparison with the rest.
+
+# Limitations
+
+The `neo.csv` data set posed limitations in the variables, description and dictionary. Since the dataset was obtained from a web-based environment, kaggle, we had insufficient variables, a poor description of the dataset and no data dictionary provided. In terms of the variables provided, it would have been ideal to have one regarding the trajectory towards, or away, from earth, as well as other potentially hazardous, or not hazardous, variables. Nevertheless, we were restricted to just using the three variables that were quantifiable in order to characterize the potential of it being hazardous. In retrospect, just using these three variables might have been an over-simplification in our determination of a hazard. On the other hand, the description of the dataset is very limited given the constraint of using Kaggle. It would have been better if the dataset was obtained straight from a NASA website or API, however this was not possible. It would have been a huge perk to know how these variables are being used by NASA professionals, what characterizes an instance to be recorded multiple times, and why they initially attributed the boolean value for Hazardous. Finally, when it came to providing a data dictionary, the kaggle website did not have one. Thus, we had to do our own research as to what these variables meant, and what they were describing. Therefore, with insufficient variables, a poor description and no data dictionary it was difficult to infer, or fully understand, the root of a hazardous or not hazardous asteroid to fully answer our question.
+
+
+# References:
+
+- Kaggle Dataset (Kaggle):
+Vani, S. (2022, June 17). NASA - Nearest Earth objects. Kaggle. Retrieved November 2, 2022, from https://www.kaggle.com/datasets/sameepvani/nasa-nearest-earth-objects 
+- Center for Near Earth Objects Studies (CNEOS):
+NASA. (n.d.). Neo basics. NASA. Retrieved November 2, 2022, from https://cneos.jpl.nasa.gov/about/neo_groups.html 
+- NASA (NASA):
+Bardan, R. (2022, October 11). NASA confirms Dart Mission Impact Changed Asteroid's motion in space. NASA. Retrieved November 2, 2022, from https://www.nasa.gov/press-release/nasa-confirms-dart-mission-impact-changed-asteroid-s-motion-in-space 
+- Araujo, R. A. N., & Winter, O. C. (2014). Near-Earth asteroid binaries in close encounters with the Earth. Astronomy & Astrophysics, 566, A23.
+- Peter O. K. Krehl (2008). History of Shock Waves, Explosions and Impact: A Chronological and Biographical Reference. Springer Science & Business Media. p. 404. ISBN 978-3-540-30421-0.
+- Tonry, J. L. (2010). An early warning system for asteroid impact. Publications of the Astronomical Society of the Pacific, 123(899), 58.
+
+
+
+
+
 
