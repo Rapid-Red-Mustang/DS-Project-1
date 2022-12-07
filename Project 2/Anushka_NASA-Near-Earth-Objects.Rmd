@@ -104,7 +104,7 @@ Before we begin any modeling, it is good practice to have a training and test ac
 ## Helper functions
 ```{r, results='markup'}
 Standardization <- function(data) {
-  return (scale(data[,1:5], center = TRUE, scale = TRUE))
+  return (scale(data[,1:3], center = TRUE, scale = TRUE))
 }
 
 basicKNN5 <- function() {
@@ -122,7 +122,7 @@ We would also be using the training and testing data to check the accuracy of a 
 #str(neo)
 set.seed(123)
 
-neo_no_sampling = (neo %>% select(est_diameter_min, est_diameter_max, relative_velocity, absolute_magnitude, miss_distance, hazardous))
+neo_no_sampling = (neo %>% select(relative_velocity, absolute_magnitude, miss_distance, hazardous))
 smp_size <- floor(0.75 * nrow(neo_no_sampling))
 train_data_size <- sample(seq_len(nrow(neo_no_sampling)), size = smp_size)
 
@@ -130,7 +130,7 @@ train_data_size <- sample(seq_len(nrow(neo_no_sampling)), size = smp_size)
 nasa_train.labels = neo_no_sampling[train_data_size,c("hazardous")]
 nasa_test.labels = neo_no_sampling[-train_data_size,c("hazardous")]
 
-neo_no_sampling = neo_no_sampling %>% select(est_diameter_min, est_diameter_max, relative_velocity, miss_distance, absolute_magnitude)
+neo_no_sampling = neo_no_sampling %>% select(relative_velocity, miss_distance, absolute_magnitude)
 nasa_train <- neo_no_sampling[train_data_size,]
 nasa_test <- neo_no_sampling[-train_data_size,]
 
@@ -163,7 +163,7 @@ train_data_size <- sample(seq_len(nrow(neo_downsampling)), size = smp_size)
 nasa_train.labels = neo_downsampling[train_data_size,c("hazardous")]
 nasa_test.labels = neo_downsampling[-train_data_size,c("hazardous")]
 
-neo_downsampling = neo_downsampling %>% select(est_diameter_min, est_diameter_max, relative_velocity, miss_distance, absolute_magnitude)
+neo_downsampling = neo_downsampling %>% select(relative_velocity, miss_distance, absolute_magnitude)
 nasa_train <- neo_downsampling[train_data_size,]
 nasa_test <- neo_downsampling[-train_data_size,]
 
@@ -181,13 +181,13 @@ The next obvious sampling technique is upsampling. One such case of upsampling i
 ```{r,results='markup'}
 set.seed(123)
 
-neo_smote = (neo %>% select(est_diameter_min, est_diameter_max, relative_velocity, absolute_magnitude, miss_distance, hazardous))
+neo_smote = (neo %>% select(relative_velocity, absolute_magnitude, miss_distance, hazardous))
 neo_smote$hazardous[neo_smote$hazardous == "True"] <- 1
 neo_smote$hazardous[neo_smote$hazardous == "False"] <- 0
 neo_smote$hazardous = as.numeric(neo_smote$hazardous)
 
 library(smotefamily)
-smote = SMOTE(neo_smote[1:5], neo_smote$hazardous)
+smote = SMOTE(neo_smote[1:3], neo_smote$hazardous)
 newdata = smote$data
 newdata = newdata %>% rename(hazardous=class)
 newdata$hazardous = as.numeric(newdata$hazardous)
@@ -206,8 +206,8 @@ nasa_test.labels = newdata[-train_data_size,c("hazardous")]
 nasa_train <- newdata[train_data_size,]
 nasa_test <- newdata[-train_data_size,]
 
-nasa_train = scale(nasa_train[,1:5], center = TRUE, scale = TRUE)
-nasa_test = scale(nasa_test[,1:5], center = TRUE, scale = TRUE)
+nasa_train = scale(nasa_train[,1:3], center = TRUE, scale = TRUE)
+nasa_test = scale(nasa_test[,1:3], center = TRUE, scale = TRUE)
 
 basicKNN5()
 ```
