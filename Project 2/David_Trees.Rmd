@@ -1,7 +1,6 @@
 ---
 title: "DATS 6101 Team 1 - Project 2"
 author: "Tyler Wallett, Anushka Vuppala and David Li"
-# date: "today"
 date: "`r Sys.Date()`"
 ---
 ```{r init, include=F}
@@ -44,7 +43,7 @@ library(rpart)
 ```{r, echo = T, fig.dim=c(8,8)}
 set.seed(1)
 neo <- read.csv("neo.csv")
-neofit <- rpart(hazardous ~ relative_velocity + absolute_magnitude + miss_distance, data=neo, method="class", control = list(maxdepth = 4) )
+neofit <- rpart(hazardous ~  absolute_magnitude + miss_distance + relative_velocity, data=neo, method="class", control = list(maxdepth = 4) )
 printcp(neofit) # display the results 
 plotcp(neofit) # visualize cross-validation results 
 summary(neofit) # detailed summary of splits
@@ -52,7 +51,6 @@ summary(neofit) # detailed summary of splits
 # plot tree 
 plot(neofit, uniform=TRUE, main="Classification Tree for NEO")
 text(neofit, use.n=TRUE, all=TRUE, cex=0.9, col="red")
-
 ```
 
 ```{r}
@@ -62,6 +60,13 @@ post(neofit, file = "neoTree.ps", title = "Classification Tree for NEO")
 ```{r, include=T}
 install.packages("caret", repos='http://cran.us.r-project.org')
 library(caret)
+neo[,'hazardous'] <- as.factor(neo[,'hazardous'])
+cm = confusionMatrix( predict(neofit, type = "class"), reference = neo[, "hazardous"] )
+xkabledply(cm$table, "confusion matrix")
+print('Overall: ')
+cm$overall
+print('Class: ')
+cm$byClass
 ```
 
 ```{r fancyplot}
@@ -69,6 +74,7 @@ install.packages("rpart.plot", repos='http://cran.us.r-project.org')
 library(rpart.plot)
 install.packages("rattle", repos='http://cran.us.r-project.org')
 library(rattle)
+rpart.plot(neofit)
 fancyRpartPlot(neofit)
 ```
 
@@ -81,7 +87,7 @@ install.packages("ISLR",repos='http://cran.us.r-project.org')
 library(ISLR)
 install.packages("tree",repos='http://cran.us.r-project.org')
 library("tree")
-treefit <- tree(log(miss_distance) ~ relative_velocity  + absolute_magnitude , data=neo)
+treefit <- tree(log(miss_distance) ~ relative_velocity  + absolute_magnitude, data=neo)
 summary(treefit)
 ```
 
