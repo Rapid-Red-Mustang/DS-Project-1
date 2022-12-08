@@ -284,7 +284,7 @@ plot(roc(nasa_test.labels, attributes(knn.9)$prob),
 From the above, we see that the recall we obtain is 80% which is better than all of the above sampling techniques we have used above. In addition to this, we also see that the area under the curve is 0.706. Ideally, anything over 0.8 is considered good fit model. But area under the curve = 0.706 is considered an acceptable model. In conclusion, the KNN model with SMOTE sampling resulted in a good accuracy turnout. In addition to this, when k=11, we get the best accuracy in comparison with the rest.
 
 
-#Feature Selection: Spearman Correlation Plot
+# Feature Selection: Spearman Correlation Plot
 
 ```{r, results='markup'}
 library(corrplot)
@@ -309,7 +309,7 @@ library('GGally')
 ggpairs(neo_cor3)
 ```
 
-#Feature Selection: Lasso Regression 
+# Feature Selection: Lasso Regression 
 
 ```{r, results='markup'}
 
@@ -338,7 +338,7 @@ plot_glmnet(cv.lambda.lasso$glmnet.fit,
      "lambda", label =TRUE, main = 'Lasso Regression')
 ```
 
-#Feature Selection: Bayesian Information Criterion (BIC) plot
+# Feature Selection: Bayesian Information Criterion (BIC) plot
 
 ```{r, results='markup'}
 
@@ -351,7 +351,7 @@ plot(reg.leaps, scale = "bic", main = "BIC", las =1)
 
 ```
 
-#Logistic Regression 
+# Logistic Regression 
 
 ```{r, results='markup'}
 
@@ -361,7 +361,7 @@ summary(glm.nasa)
 
 ```
 
-#Logistic Regression: Evaluation Metrics
+# Logistic Regression: Evaluation Metrics
 
 ```{r, results='markup'}
 set.seed(123)
@@ -387,7 +387,7 @@ glm.nasa$coefficients
 ```
 
 
-#Logistic Regression: Visualizations
+# Logistic Regression: Visualizations
 
 ```{r, results='markup'}
 
@@ -436,21 +436,9 @@ ggplot(glm_plot6, aes(x = relative_velocity, y = PredictedProb)) + geom_ribbon(a
 
 ```
 
-#Sample Predictions
 
-```{r, results='markup'}
 
-sampleprediction1 = data.frame(relative_velocity = 17.38, absolute_magnitude = 17.1, miss_distance = 1.2417e+8)
-
-sampleprediction2 = data.frame(relative_velocity = 21.80, absolute_magnitude = 18.02, miss_distance = 2.543e+8)
-
-predict(glm.nasa, newdata = sampleprediction1, type = 'response')
-
-predict(glm.nasa, newdata = sampleprediction2, type = 'response')
-
-```
-
-#Decision Trees
+# Decision Trees
 
 ```{r}
 install.packages("rpart", repos='http://cran.us.r-project.org') 
@@ -458,8 +446,9 @@ library(rpart)
 ```
 ```{r, fig.dim=c(8,8)}
 set.seed(1)
-neo <- read.csv("neo.csv")
-neofit <- rpart(hazardous ~  absolute_magnitude + miss_distance + relative_velocity, data=neo, method="class", control = list(maxdepth = 4) )
+newtrees = newdata
+#neo <- read.csv("neo.csv")
+neofit <- rpart(hazardous ~  absolute_magnitude + miss_distance + relative_velocity, data=newtrees, method="class", control = list(maxdepth = 4) )
 printcp(neofit) # display the results 
 plotcp(neofit) # visualize cross-validation results 
 summary(neofit) # detailed summary of splits
@@ -473,9 +462,9 @@ post(neofit, file = "neoTree.ps", title = "Classification Tree for NEO")
 ```
 
 ```{r fancyplot}
-install.packages("rpart.plot", repos='http://cran.us.r-project.org')
+#install.packages("rpart.plot", repos='http://cran.us.r-project.org')
 library(rpart.plot)
-install.packages("rattle", repos='http://cran.us.r-project.org')
+#install.packages("rattle", repos='http://cran.us.r-project.org')
 library(rattle)
 rpart.plot(neofit)
 fancyRpartPlot(neofit)
@@ -486,13 +475,61 @@ install.packages("ISLR",repos='http://cran.us.r-project.org')
 library(ISLR)
 install.packages("tree",repos='http://cran.us.r-project.org')
 library("tree")
-treefit <- tree(log(miss_distance) ~ relative_velocity  + absolute_magnitude, data=neo)
+treefit <- tree(log(miss_distance) ~ relative_velocity  + absolute_magnitude, data=newtrees)
 summary(treefit)
 ```
 
 ```{r}
 plot(treefit)
 text(treefit,cex=0.75, col="blue")
+```
+
+
+```{r}
+install.packages("caret", repos='http://cran.us.r-project.org')
+library(caret)
+loadPkg("caret")
+confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
+
+for (deep in 2:6) {
+neofit2 <- rpart(hazardous ~  absolute_magnitude + miss_distance + relative_velocity, data=newtrees, method="class", control = list(maxdepth = deep) )
+cm2 = caret::confusionMatrix( predict(neofit2, type = "class"), reference = as.factor(newtrees[, "hazardous"] ))
+ cmaccu = cm2$overall['Accuracy']
+ cmt = data.frame(Depth=deep, Accuracy = cmaccu, row.names = NULL )
+cmt = cbind( cmt, data.frame( t(cm$byClass) ) )
+ confusionMatrixResultDf = rbind(confusionMatrixResultDf, cmt)
+}
+```
+
+```{r, results="asis"}
+xkabledply(confusionMatrixResultDf, title="NEO Classification Trees with Varying Max Depth")
+```
+
+
+## AUC for Decision 
+```{r, results='markup'}
+library(ROCR)
+tree.preds <- predict(neofit2, as.data.frame(nasa_test),type = "prob")[,2]
+library(pROC)
+tree.roc <- roc(nasa_test.labels, tree.preds)
+print(tree.roc)
+plot(tree.roc)
+
+
+```
+
+# Sample Predictions
+
+```{r, results='markup'}
+
+sampleprediction1 = data.frame(relative_velocity = 17.38, absolute_magnitude = 17.1, miss_distance = 1.2417e+8)
+
+sampleprediction2 = data.frame(relative_velocity = 21.80, absolute_magnitude = 18.02, miss_distance = 2.543e+8)
+
+predict(glm.nasa, newdata = sampleprediction1, type = 'response')
+
+predict(glm.nasa, newdata = sampleprediction2, type = 'response')
+
 ```
 
 # Limitations
