@@ -94,8 +94,6 @@ Summary of all asteroids is as follows:
 summary(neo)
 ```
 
-
-
 # PROJECT 2
 
 Before we begin any modeling, it is good practice to have a training and test accuracy.
@@ -284,6 +282,176 @@ plot(roc(nasa_test.labels, attributes(knn.9)$prob),
 
 ```
 From the above, we see that the recall we obtain is 80% which is better than all of the above sampling techniques we have used above. In addition to this, we also see that the area under the curve is 0.706. Ideally, anything over 0.8 is considered good fit model. But area under the curve = 0.706 is considered an acceptable model. In conclusion, the KNN model with SMOTE sampling resulted in a good accuracy turnout. In addition to this, when k=11, we get the best accuracy in comparison with the rest.
+
+
+#Feature Selection: Spearman Correlation Plot
+
+```{r, results='markup'}
+library(corrplot)
+
+neo_cor <- select(neo, c(3:6,9,10))
+neo_cor$hazardous = as.numeric(as.logical(neo_cor$hazardous))
+
+corrplot(cor(neo_cor, method ='spearman'), method = "number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
+
+neo_cor2 <- select(neo, c(4:6,9,10))
+neo_cor2$hazardous = as.numeric(as.logical(neo_cor2$hazardous))
+
+corrplot(cor(neo_cor2, method ='spearman'), method = "number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
+
+neo_cor3 <- select(neo, c(5:6,9,10))
+neo_cor3$hazardous = as.numeric(as.logical(neo_cor3$hazardous))
+
+corrplot(cor(neo_cor3, method ='spearman'), method = "number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
+
+library('ggplot2')
+library('GGally')
+ggpairs(neo_cor3)
+```
+
+#Feature Selection: Lasso Regression 
+
+```{r, results='markup'}
+
+library(glmnet)
+
+newdata_lasso <- newdata
+
+newdata_lasso$hazardous <- as.factor(newdata_lasso$hazardous)
+
+y = newdata_lasso[,"hazardous"]
+
+newdata_lasso_x <- scale(newdata_lasso[1:3], center = TRUE, scale = TRUE)
+newdata_lasso_x <- data.frame(newdata_lasso)
+
+x = model.matrix(hazardous ~ relative_velocity + absolute_magnitude + miss_distance, data=newdata_lasso)[,-1]
+
+cv.lambda.lasso <- cv.glmnet(x=x, y=y, family = "binomial", alpha = 1)
+
+plot(cv.lambda.lasso)   
+title(main = 'Cross-Validation of Binomial Deviance vs. Log Lambda', line = 0.2)
+
+cv.lambda.lasso
+
+library(plotmo)
+plot_glmnet(cv.lambda.lasso$glmnet.fit, 
+     "lambda", label =TRUE, main = 'Lasso Regression')
+```
+
+#Feature Selection: Bayesian Information Criterion (BIC) plot
+
+```{r, results='markup'}
+
+newdata_glm <- newdata
+newdata_glm$hazardous <- as.factor(newdata_glm$hazardous)
+
+loadPkg("leaps")
+reg.leaps <- regsubsets(hazardous~., data = newdata_glm, nbest = 1, method = "exhaustive")
+plot(reg.leaps, scale = "bic", main = "BIC", las =1)
+
+```
+
+#Logistic Regression 
+
+```{r, results='markup'}
+
+glm.nasa <- glm(formula = hazardous ~ ., data = newdata_glm, family = binomial)
+
+summary(glm.nasa)
+
+```
+
+#Logistic Regression: Evaluation Metrics
+
+```{r, results='markup'}
+set.seed(123)
+#Confusion matrix
+loadPkg("ModelMetrics")
+xkabledply( confusionMatrix(actual= glm.nasa$y, predicted= glm.nasa$fitted.values), title = "Confusion matrix from Logit Model" )
+
+#McFadden's value
+loadPkg("pscl") 
+model1r2 = pR2(glm.nasa)
+model1r2
+
+#Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC)
+loadPkg("pROC")
+prob1 = predict(glm.nasa, type ='response')
+glm.nasa$prob = prob1
+h1 = roc(hazardous ~ prob1, newdata_glm)
+h1$auc
+plot(h1, main = 'ROC: Logistic Regression Model')
+
+glm.nasa$coefficients
+
+```
+
+
+#Logistic Regression: Visualizations
+
+```{r, results='markup'}
+
+glm_plot1 <- with(neo_cor3, data.frame(relative_velocity = mean(relative_velocity), miss_distance = mean(miss_distance), absolute_magnitude = rep(seq(from = 9, to = 34, length.out = 100), 2)))
+
+glm_plot2 <- cbind(glm_plot1, predict(glm.nasa, newdata = glm_plot1, type = "link", se = TRUE))
+glm_plot2 <- within(glm_plot2, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+
+ggplot(glm_plot2, aes(x = absolute_magnitude, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
+    ymax = UL), alpha = 0.2) + geom_line(size = 1, color = 'red') + labs(title = "Logistic model of predicted probability vs absolute_magnitude")
+
+```
+
+```{r, results='markup'}
+
+glm_plot3 <- with(neo_cor3, data.frame(relative_velocity = mean(relative_velocity), miss_distance = rep(seq(from = 6700, to = 750000000, length.out = 100), 2), absolute_magnitude = mean(absolute_magnitude)))
+
+glm_plot4 <- cbind(glm_plot3, predict(glm.nasa, newdata = glm_plot3, type = "link", se = TRUE))
+glm_plot4 <- within(glm_plot4, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+
+ggplot(glm_plot4, aes(x = miss_distance, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
+    ymax = UL), alpha = 0.2) + geom_line(size = 1, color = 'red') + labs(title = "Logistic model of predicted probability vs miss_distance")
+```
+
+```{r, results='markup'}
+
+glm_plot5 <- with(neo_cor3, data.frame(relative_velocity = rep(seq(from = 200, to = 240000, length.out = 100), 2), miss_distance = mean(miss_distance), absolute_magnitude = mean(absolute_magnitude)))
+
+glm_plot6 <- cbind(glm_plot5, predict(glm.nasa, newdata = glm_plot5, type = "link", se = TRUE))
+glm_plot6 <- within(glm_plot6, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+
+ggplot(glm_plot6, aes(x = relative_velocity, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
+    ymax = UL), alpha = 0.2) + geom_line(size = 1, color = 'red') + labs(title = "Logistic model of predicted probability vs relative_velocity")
+
+```
+
+#Sample Predictions
+
+```{r, results='markup'}
+
+sampleprediction1 = data.frame(relative_velocity = 17.38, absolute_magnitude = 17.1, miss_distance = 1.2417e+8)
+
+sampleprediction2 = data.frame(relative_velocity = 21.80, absolute_magnitude = 18.02, miss_distance = 2.543e+8)
+
+predict(glm.nasa, newdata = sampleprediction1, type = 'response')
+
+predict(glm.nasa, newdata = sampleprediction2, type = 'response')
+
+```
+
+
+
 
 # Limitations
 

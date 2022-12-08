@@ -178,12 +178,13 @@ x = model.matrix(hazardous ~ relative_velocity + absolute_magnitude + miss_dista
 cv.lambda.lasso <- cv.glmnet(x=x, y=y, family = "binomial", alpha = 1)
 
 plot(cv.lambda.lasso)   
+title(main = 'Cross-Validation of Binomial Deviance vs. Log Lambda', line = 0.2)
 
 cv.lambda.lasso
 
 library(plotmo)
 plot_glmnet(cv.lambda.lasso$glmnet.fit, 
-     "lambda", label =TRUE)
+     "lambda", label =TRUE, main = 'Lasso Regression')
 ```
 
 #Feature Selection: Bayesian Information Criterion (BIC) plot
@@ -191,11 +192,12 @@ plot_glmnet(cv.lambda.lasso$glmnet.fit,
 ```{r, results='markup'}
 
 newdata_glm <- newdata
+newdata_glm <- select(newdata_glm, c(3:6))
 newdata_glm$hazardous <- as.factor(newdata_glm$hazardous)
 
 loadPkg("leaps")
-reg.leaps <- regsubsets(hazardous~relative_velocity + absolute_magnitude + miss_distance, data = newdata_glm, nbest = 1, method = "exhaustive")
-plot(reg.leaps, scale = "bic", main = "BIC")
+reg.leaps <- regsubsets(hazardous~., data = newdata_glm, nbest = 1, method = "exhaustive")
+plot(reg.leaps, scale = "bic", main = "BIC", las =1)
 
 ```
 
@@ -203,7 +205,8 @@ plot(reg.leaps, scale = "bic", main = "BIC")
 
 ```{r, results='markup'}
 
-glm.nasa <- glm(formula = hazardous ~ miss_distance + absolute_magnitude + relative_velocity, data = newdata_glm, family = binomial)
+glm.nasa <- glm(formula = hazardous ~ ., data = newdata_glm, family = binomial)
+
 summary(glm.nasa)
 
 ```
@@ -212,7 +215,7 @@ summary(glm.nasa)
 #Logistic Regression: Evaluation Metrics
 
 ```{r, results='markup'}
-
+set.seed(123)
 #Confusion matrix
 loadPkg("ModelMetrics")
 xkabledply( confusionMatrix(actual= glm.nasa$y, predicted= glm.nasa$fitted.values), title = "Confusion matrix from Logit Model" )
@@ -228,16 +231,77 @@ prob1 = predict(glm.nasa, type ='response')
 glm.nasa$prob = prob1
 h = roc(hazardous ~ prob1, newdata_glm)
 auc(h)
-plot(h)
+plot(h, main = 'ROC: Logistic Regression Model')
 
 glm.nasa$coefficients
 
 ```
 
 
-#Logistic Regression: Evaluation Metrics
+#Logistic Regression: Sample predictions
 
 ```{r, results='markup'}
+
+glm_plot1 <- with(neo_cor3, data.frame(relative_velocity = mean(relative_velocity), miss_distance = mean(miss_distance), absolute_magnitude = rep(seq(from = 9, to = 34, length.out = 100), 2)))
+
+glm_plot2 <- cbind(glm_plot1, predict(glm.nasa, newdata = glm_plot1, type = "link", se = TRUE))
+glm_plot2 <- within(glm_plot2, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+
+ggplot(glm_plot2, aes(x = absolute_magnitude, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
+    ymax = UL), alpha = 0.2) + geom_line(size = 1, color = 'red') + labs(title = "Logistic model of predicted probability vs absolute_magnitude")
+
+```
+
+```{r, results='markup'}
+
+glm_plot3 <- with(neo_cor3, data.frame(relative_velocity = mean(relative_velocity), miss_distance = rep(seq(from = 6700, to = 75000000, length.out = 100), 2), absolute_magnitude = mean(absolute_magnitude)))
+
+glm_plot4 <- cbind(glm_plot3, predict(glm.nasa, newdata = glm_plot3, type = "link", se = TRUE))
+glm_plot4 <- within(glm_plot4, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+
+ggplot(glm_plot4, aes(x = miss_distance, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
+    ymax = UL), alpha = 0.2) + geom_line(aes(colour = 'blue'),
+    size = 1)
+
+```
+
+
+```{r, results='markup'}
+
+glm_plot5 <- with(neo_cor3, data.frame(relative_velocity = rep(seq(from = 200, to = 240000, length.out = 100), 2), miss_distance = mean(miss_distance), absolute_magnitude = mean(absolute_magnitude)))
+
+glm_plot6 <- cbind(glm_plot5, predict(glm.nasa, newdata = glm_plot5, type = "link", se = TRUE))
+glm_plot6 <- within(glm_plot6, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+
+ggplot(glm_plot6, aes(x = relative_velocity, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
+    ymax = UL), alpha = 0.2) + geom_line(aes(colour = 'blue'),
+    size = 1)
+
+```
+
+#Sample Predictions
+
+```{r, results='markup'}
+
+sampleprediction1 = data.frame(relative_velocity = 17.38, absolute_magnitude = 17.1, miss_distance = 1.2417e+8)
+
+sampleprediction2 = data.frame(relative_velocity = 21.80, absolute_magnitude = 18.02, miss_distance = 2.543e+8)
+
+predict(glm.nasa, newdata = sampleprediction1, type = 'response')
+
+predict(glm.nasa, newdata = sampleprediction2, type = 'response')
 
 ```
 
