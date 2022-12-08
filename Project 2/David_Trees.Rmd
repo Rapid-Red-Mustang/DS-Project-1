@@ -69,6 +69,23 @@ print('Class: ')
 cm$byClass
 ```
 
+```{r}
+confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
+
+for (deep in 2:6) {
+neofit2 <- rpart(hazardous ~  absolute_magnitude + miss_distance + relative_velocity, data=neo, method="class", control = list(maxdepth = deep) )
+cm2 = confusionMatrix( predict(neofit2, type = "class"), reference = neo[, "hazardous"] )
+ cmaccu = cm2$overall['Accuracy']
+ cmt = data.frame(Depth=deep, Accuracy = cmaccu, row.names = NULL )
+cmt = cbind( cmt, data.frame( t(cm$byClass) ) )
+ confusionMatrixResultDf = rbind(confusionMatrixResultDf, cmt)
+}
+```
+
+```{r, results="asis"}
+xkabledply(confusionMatrixResultDf, title="NEO Classification Trees with Varying Max Depth")
+```
+
 ```{r fancyplot}
 install.packages("rpart.plot", repos='http://cran.us.r-project.org')
 library(rpart.plot)
@@ -78,9 +95,6 @@ rpart.plot(neofit)
 fancyRpartPlot(neofit)
 ```
 
-```{r, include=FALSE}
-confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
-```
 
 ```{r}
 install.packages("ISLR",repos='http://cran.us.r-project.org')
@@ -95,6 +109,8 @@ summary(treefit)
 plot(treefit)
 text(treefit,cex=0.75, col="blue")
 ```
+
+
 # References:
 
 - Kaggle Dataset (Kaggle):
