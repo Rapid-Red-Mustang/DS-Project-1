@@ -308,11 +308,6 @@ predict(glm.nasa, newdata = sampleprediction2, type = 'response')
 
 
 
-
-
-
-
-
 # References:
 
 - Kaggle Dataset (Kaggle):
