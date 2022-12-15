@@ -46,7 +46,7 @@ Out of these 5 variables, we have 3 variables that play a primary role in determ
 1.	miss_distance
 1.	absolute_magnitude
 
-Throughout the rest of this RMD file, we go over each of these 3 variables in complete depth to answer our SMART question – what are some of the statistical characteristics of Nearest Earth Objects, over the last 22 years, in terms of relative velocity, miss distance and absolute magnitude, that make them hazardous or not?
+Throughout the rest of this RMD file, we will try to build a binary classification model that would use these parameters and then predict if any future asteroid that is striking the Earth would be hazardous or not? 
 
 
 ```{r setup, include=FALSE}
@@ -98,7 +98,7 @@ summary(neo)
 
 # PROJECT 2
 
-Before we begin any modeling, it is good practice to have a training and test accuracy.
+Before we begin any modeling, it is good practice to perform some feature engineering.
 
 # Sampling of data
 ## Helper functions
@@ -114,6 +114,8 @@ basicKNN5 <- function() {
 }
 ```
 
+
+As part of feature engineering, let's first consider a base model to play with. The base model that we are considering here is the KNN model with a k=5.
 Below is the R code of performing the split without any sampling technique used.
 We would also be using the training and testing data to check the accuracy of a base KNN model. We would implement this KNN model with the k value equal to 5 for the purpose of comparison between different sampling techniques.
 
@@ -173,7 +175,7 @@ nasa_test = Standardization(nasa_test)
 
 basicKNN5()
 ```
-From downsampling result above, we see that the results have become more realisti. In other words, we see that our Specificity rate has increased to 92% which is a great indicator of a great model. However, one biggest disadvantage of downsampling is loss of data. We are training the model with insufficient amount of data.
+From downsampling result above, we see that the results have become more realistic. In other words, we see that our Specificity rate has increased to 92% which is a great indicator of a great model. However, one biggest disadvantage of downsampling is loss of data. We are training the model with insufficient amount of data.
 
 The next obvious sampling technique is upsampling. One such case of upsampling is SMOTE. Smote created artificial data points to bring up the data points in minority class.
 
@@ -186,6 +188,7 @@ neo_smote$hazardous[neo_smote$hazardous == "True"] <- 1
 neo_smote$hazardous[neo_smote$hazardous == "False"] <- 0
 neo_smote$hazardous = as.numeric(neo_smote$hazardous)
 
+install.packages("smotefamily",repos='http://cran.us.r-project.org') 
 library(smotefamily)
 smote = SMOTE(neo_smote[1:3], neo_smote$hazardous)
 newdata = smote$data
@@ -212,8 +215,11 @@ nasa_test = scale(nasa_test[,1:3], center = TRUE, scale = TRUE)
 basicKNN5()
 ```
 
-From the above, we can see that we have finally received a higher rate of Recall. 
+From the above, we can see that we have finally received a higher rate of Recall=92%. 
+The reason we see recall as an important metric rather than accuracy is because of the significance of False Negative. False Negative indicates that the total number of asteroids that were predicted non-hazardous by our model, but in actuality, it is hazardous. This is very dangerous in our case as we would not be able to take timely action if in any case our model predicted a hazardous asteroid as non-hazardous. 
 
+
+Before jumping into models, let us do a count comparison of our dataset before and after smote. 
 
 # Count Plot of data points after SMOTE
 ```{r, results='markup'}
@@ -232,13 +238,16 @@ ggplot(my_data,
 
 ```
 
-Now, this is only with k=5. Let's explore k value with a defined set of ranges. Ideally, k has a value between 5 and 20. We shall run a for loop to get accuracy of each odd valued k to find the optimal one.
+
+Now, our feature engineering is complete. Now we can officially proceed with KNN model. 
 
 # KNN
+The above sampling techniques were performed only with k=5. Let's explore k value with a defined set of ranges. Ideally, k has a value between 5 and 20. We shall run a for loop to get accuracy of each odd valued k to find the optimal one.
+
 ```{r, results='markup'}
 ResultDf = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
 set.seed(222)
-for (kval in seq(1,18,2)) {
+for (kval in seq(1,20,2)) {
   nasa_pred <- knn(train = nasa_train, test = nasa_test, cl=nasa_train.labels, k=kval)
   cm = confusionMatrix(nasa_pred, as.factor(nasa_test.labels) ) # from caret library
   cmaccu = cm$overall['Accuracy']
@@ -249,7 +258,7 @@ xkabledply(ResultDf, "Total Accuracy Summary:")
 
 ```
 
-Now, with the accuracies defined for all possible k values, we shall draw a plot and see the accuracies.
+Now, with the accuracies defined for all possible k values, we shall draw a plot and see and compare the accuracies.
 ```{r, results='markup'}
 ggplot(data=ResultDf, aes(x=k, y=Total.Accuracy,group=1)) +
   geom_line(color="#aa0022", size=1.75) +
@@ -262,10 +271,10 @@ ggplot(data=ResultDf, aes(x=k, y=Total.Accuracy,group=1)) +
 
 
 ```
-From the above, we see that when k=9, we get the good accuracy of 87.6%
-Please note that despite having higher accuracies beyond k=9, we should keep in mind that having a higher k value leads to overfitting of the model and thus, we need to be mindful when choosing our k value.
+From the above, we see that when k=9, we get the highest accuracy of 87.6%
+Please note that despite having higher accuracies beyond k=9, we should keep in mind that having a higher k value leads to overfitting of the model and thus, we need to be very mindful when choosing our k value.
 
-Now, taking k=9, we should perform model evaulation.
+Now, taking k=9, we shall perform model evaulation.
 
 ## KNN model Evaluation
 ```{r, results='markup'}
@@ -283,7 +292,276 @@ plot(roc(nasa_test.labels, attributes(knn.9)$prob),
 
 
 ```
-From the above, we see that the recall we obtain is 80% which is better than all of the above sampling techniques we have used above. In addition to this, we also see that the area under the curve is 0.706. Ideally, anything over 0.8 is considered good fit model. But area under the curve = 0.706 is considered an acceptable model. In conclusion, the KNN model with SMOTE sampling resulted in a good accuracy turnout. In addition to this, when k=11, we get the best accuracy in comparison with the rest.
+From the above, we see that the recall we obtain is 80% which is better than all of the above sampling techniques we have used above. In addition to this, we also see that the area under the curve is 0.706. Ideally, anything over 0.8 is considered good fit model. But area under the curve = 0.706 is considered an "acceptable model". In conclusion, the KNN model with SMOTE sampling resulted in a good accuracy turnout. In addition to this, when k=11, we get the best accuracy in comparison with the rest.
+
+
+# Feature Selection: Spearman Correlation Plot
+
+```{r, results='markup'}
+library(corrplot)
+
+neo_cor <- select(neo, c(3:6,9,10))
+neo_cor$hazardous = as.numeric(as.logical(neo_cor$hazardous))
+
+corrplot(cor(neo_cor, method ='spearman'), method = "number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
+
+neo_cor2 <- select(neo, c(4:6,9,10))
+neo_cor2$hazardous = as.numeric(as.logical(neo_cor2$hazardous))
+
+corrplot(cor(neo_cor2, method ='spearman'), method = "number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
+
+neo_cor3 <- select(neo, c(5:6,9,10))
+neo_cor3$hazardous = as.numeric(as.logical(neo_cor3$hazardous))
+
+corrplot(cor(neo_cor3, method ='spearman'), method = "number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
+
+library('ggplot2')
+library('GGally')
+ggpairs(neo_cor3)
+```
+
+# Feature Selection: Lasso Regression 
+
+```{r, results='markup'}
+
+library(glmnet)
+
+newdata_lasso <- newdata
+
+newdata_lasso$hazardous <- as.factor(newdata_lasso$hazardous)
+
+y = newdata_lasso[,"hazardous"]
+
+newdata_lasso_x <- scale(newdata_lasso[1:3], center = TRUE, scale = TRUE)
+newdata_lasso_x <- data.frame(newdata_lasso)
+
+x = model.matrix(hazardous ~ relative_velocity + absolute_magnitude + miss_distance, data=newdata_lasso)[,-1]
+
+cv.lambda.lasso <- cv.glmnet(x=x, y=y, family = "binomial", alpha = 1)
+
+plot(cv.lambda.lasso)   
+title(main = 'Cross-Validation of Binomial Deviance vs. Log Lambda', line = 0.2)
+
+cv.lambda.lasso
+
+library(plotmo)
+plot_glmnet(cv.lambda.lasso$glmnet.fit, 
+     "lambda", label =TRUE, main = 'Lasso Regression')
+```
+
+# Feature Selection: Bayesian Information Criterion (BIC) plot
+
+```{r, results='markup'}
+
+newdata_glm <- newdata
+newdata_glm$hazardous <- as.factor(newdata_glm$hazardous)
+
+loadPkg("leaps")
+reg.leaps <- regsubsets(hazardous~., data = newdata_glm, nbest = 1, method = "exhaustive")
+plot(reg.leaps, scale = "bic", main = "BIC", las =1)
+
+```
+
+# Logistic Regression 
+
+```{r, results='markup'}
+
+glm.nasa <- glm(formula = hazardous ~ ., data = newdata_glm, family = binomial)
+
+summary(glm.nasa)
+
+```
+
+# Logistic Regression: Evaluation Metrics
+
+```{r, results='markup'}
+set.seed(123)
+#Confusion matrix
+loadPkg("ModelMetrics")
+xkabledply( confusionMatrix(actual= glm.nasa$y, predicted= glm.nasa$fitted.values), title = "Confusion matrix from Logit Model" )
+
+#McFadden's value
+loadPkg("pscl") 
+model1r2 = pR2(glm.nasa)
+model1r2
+
+#Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC)
+loadPkg("pROC")
+prob1 = predict(glm.nasa, type ='response')
+glm.nasa$prob = prob1
+h1 = roc(hazardous ~ prob1, newdata_glm)
+h1$auc
+plot(h1, main = 'ROC: Logistic Regression Model')
+
+glm.nasa$coefficients
+
+```
+
+
+# Logistic Regression: Visualizations
+
+```{r, results='markup'}
+
+glm_plot1 <- with(neo_cor3, data.frame(relative_velocity = mean(relative_velocity), miss_distance = mean(miss_distance), absolute_magnitude = rep(seq(from = 9, to = 34, length.out = 100), 2)))
+
+glm_plot2 <- cbind(glm_plot1, predict(glm.nasa, newdata = glm_plot1, type = "link", se = TRUE))
+glm_plot2 <- within(glm_plot2, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+
+ggplot(glm_plot2, aes(x = absolute_magnitude, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
+    ymax = UL), alpha = 0.2) + geom_line(size = 1, color = 'red') + labs(title = "Logistic model of predicted probability vs absolute_magnitude")
+
+```
+
+```{r, results='markup'}
+
+glm_plot3 <- with(neo_cor3, data.frame(relative_velocity = mean(relative_velocity), miss_distance = rep(seq(from = 6700, to = 750000000, length.out = 100), 2), absolute_magnitude = mean(absolute_magnitude)))
+
+glm_plot4 <- cbind(glm_plot3, predict(glm.nasa, newdata = glm_plot3, type = "link", se = TRUE))
+glm_plot4 <- within(glm_plot4, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+
+ggplot(glm_plot4, aes(x = miss_distance, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
+    ymax = UL), alpha = 0.2) + geom_line(size = 1, color = 'red') + labs(title = "Logistic model of predicted probability vs miss_distance")
+```
+
+```{r, results='markup'}
+
+glm_plot5 <- with(neo_cor3, data.frame(relative_velocity = rep(seq(from = 200, to = 240000, length.out = 100), 2), miss_distance = mean(miss_distance), absolute_magnitude = mean(absolute_magnitude)))
+
+glm_plot6 <- cbind(glm_plot5, predict(glm.nasa, newdata = glm_plot5, type = "link", se = TRUE))
+glm_plot6 <- within(glm_plot6, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+
+ggplot(glm_plot6, aes(x = relative_velocity, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
+    ymax = UL), alpha = 0.2) + geom_line(size = 1, color = 'red') + labs(title = "Logistic model of predicted probability vs relative_velocity")
+
+```
+
+
+
+# Decision Trees
+
+```{r}
+install.packages("rpart", repos='http://cran.us.r-project.org') 
+library(rpart)
+```
+```{r, fig.dim=c(8,8)}
+set.seed(1)
+newtrees = newdata
+#neo <- read.csv("neo.csv")
+neofit <- rpart(hazardous ~  absolute_magnitude + miss_distance + relative_velocity, data=newtrees, method="class", control = list(maxdepth = 4) )
+printcp(neofit) # display the results 
+plotcp(neofit) # visualize cross-validation results 
+summary(neofit) # detailed summary of splits
+
+# plot tree 
+plot(neofit, uniform=TRUE, main="Classification Tree for NEO")
+text(neofit, use.n=TRUE, all=TRUE, cex=0.9, col="red")
+```
+```{r}
+post(neofit, file = "neoTree.ps", title = "Classification Tree for NEO")
+```
+
+```{r fancyplot}
+#install.packages("rpart.plot", repos='http://cran.us.r-project.org')
+library(rpart.plot)
+#install.packages("rattle", repos='http://cran.us.r-project.org')
+library(rattle)
+rpart.plot(neofit)
+fancyRpartPlot(neofit)
+```
+
+```{r}
+install.packages("ISLR",repos='http://cran.us.r-project.org')
+library(ISLR)
+install.packages("tree",repos='http://cran.us.r-project.org')
+library("tree")
+treefit <- tree(log(miss_distance) ~ relative_velocity  + absolute_magnitude, data=newtrees)
+summary(treefit)
+```
+
+```{r}
+plot(treefit)
+text(treefit,cex=0.75, col="blue")
+```
+
+
+```{r}
+install.packages("caret", repos='http://cran.us.r-project.org')
+library(caret)
+loadPkg("caret")
+confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
+
+for (deep in 2:6) {
+neofit2 <- rpart(hazardous ~  absolute_magnitude + miss_distance + relative_velocity, data=newtrees, method="class", control = list(maxdepth = deep) )
+cm2 = caret::confusionMatrix( predict(neofit2, type = "class"), reference = as.factor(newtrees[, "hazardous"] ))
+ cmaccu = cm2$overall['Accuracy']
+ cmt = data.frame(Depth=deep, Accuracy = cmaccu, row.names = NULL )
+cmt = cbind( cmt, data.frame( t(cm$byClass) ) )
+ confusionMatrixResultDf = rbind(confusionMatrixResultDf, cmt)
+}
+```
+
+```{r, results="asis"}
+xkabledply(confusionMatrixResultDf, title="NEO Classification Trees with Varying Max Depth")
+```
+
+
+## AUC for Decision 
+```{r, results='markup'}
+library(ROCR)
+tree.preds <- predict(neofit2, as.data.frame(nasa_test),type = "prob")[,2]
+library(pROC)
+tree.roc <- roc(nasa_test.labels, tree.preds)
+print(tree.roc)
+plot(tree.roc)
+
+
+```
+
+# Model Comparisons
+Now, let's compare the above 3 models. 
+
+```{r table2, warnings=FALSE, results='asis'}
+
+scores <- data.frame ( model = c ("KNN","Logisitic Regression","Classification Tree"),
+  Accuracy  = c("87.9%", "85.3%", "88.1%"),
+                  Specificity = c("96.2%", "91.16", "98.9%"),
+                    Recall = c("79.8%", "80.73%", "77.6%"),
+                    AUC = c("0.717", "0.877", "0.51"))
+                  
+
+
+xkabledply(scores)
+
+```
+
+As mentioned previously, we would be considering Recall and AUC score as the critical metrics. From the above, we see that the Logistic Regression has the highest Recall and AUC score. Additionally, we know that AUC score > 0.8 is considered the best fit model. And here, we have Logistic Regression having the highest AUC score equal to 0.877. With this, we conclude that Logistic Regression is the best model for this dataset. Now, we use the logistic regression on a sample asteroids ton test our models.
+
+
+# Sample Predictions
+
+```{r, results='markup'}
+
+sampleprediction1 = data.frame(relative_velocity = 17.38, absolute_magnitude = 17.1, miss_distance = 1.2417e+8)
+
+sampleprediction2 = data.frame(relative_velocity = 21.80, absolute_magnitude = 18.02, miss_distance = 2.543e+8)
+
+predict(glm.nasa, newdata = sampleprediction1, type = 'response')
+
+predict(glm.nasa, newdata = sampleprediction2, type = 'response')
+
+```
 
 # Limitations
 
