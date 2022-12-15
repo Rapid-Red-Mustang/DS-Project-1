@@ -35,6 +35,8 @@ Throughout the rest of this RMD file, we go over each of these 3 variables in co
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Decision Trees are a type of supervised machine learning algo that work to form categorical data. In many ways, they do exactly what they sound like: allow the reader to decide on the probability of certain outcomes based on concurrent and past criteria.
+
 ```{r}
 install.packages("rpart", repos='http://cran.us.r-project.org') # Classification trees, rpart(formula, data=, method=,control=)
 library(rpart)
@@ -108,20 +110,6 @@ summary(treefit)
 ```{r}
 plot(treefit)
 text(treefit,cex=0.75, col="blue")
-```
-
-# Sample Predictions
-
-```{r, results='markup'}
-
-sampleprediction1 = data.frame(relative_velocity = 17.38, absolute_magnitude = 17.1, miss_distance = 1.2417e+8)
-
-sampleprediction2 = data.frame(relative_velocity = 21.80, absolute_magnitude = 18.02, miss_distance = 2.543e+8)
-
-predict(glm.nasa, newdata = sampleprediction1, type = 'response')
-
-predict(glm.nasa, newdata = sampleprediction2, type = 'response')
-
 ```
 
 # References:
