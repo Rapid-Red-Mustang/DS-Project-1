@@ -35,7 +35,9 @@ Throughout the rest of this RMD file, we go over each of these 3 variables in co
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Decision Trees are a type of supervised machine learning algo that work to form categorical data. In many ways, they do exactly what they sound like: allow the reader to decide on the probability of certain outcomes based on concurrent and past criteria.
+Decision Trees are a type of nonparametric supervised machine learning algo that work to form categorical and/or quantitative predictors. In many ways, they do exactly what they sound like: allow the reader to decide on the probability of certain outcomes based on concurrent and previous criteria.
+
+The following code begins by plotting a simple classification tree and showing the size of the relative "x" error. 
 
 ```{r}
 install.packages("rpart", repos='http://cran.us.r-project.org') # Classification trees, rpart(formula, data=, method=,control=)
