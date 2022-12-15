@@ -133,7 +133,13 @@ print(100 * sum(nasa_test.labels == knn.5)/NROW(nasa_test.labels))
 confusionMatrix(knn.5, as.factor(nasa_test.labels) )
 ```
 
-#Feature Selection: Spearman Correlation Plot
+#Feature Selection 
+
+Before doing the modeling section of our analysis, we decided to conduct a feature selection. A feature selection will help us to properly identify those features, or variables, that are most important to include in our models. In this manner, we can get the best model with the given data. To do identify these features, we decided to use three relevant feature selection models, these are: Spearman Correlation Plot, Lasso Regression and Bayesian Information Criterion (BIC) plot. Each feature selection model will interpret the data in their own manner and yield a different conclusion as to which feature is best to use. Therefore, if there is a feature that is indeed important, it should, in theory, be noticeable across each of these feature selection models.
+
+## Feature Selection: Spearman Correlation Plot
+
+Spearman Correlation Plots identify each correlation coefficient for ranked variables. A perk of using Spearmans Correlation Plot is that we can notice which relationships might result in multicollinearity, meaning that one independent variable being highly or absolutely correlated with another independent variable. Luckily for us, we do notice some substantial multicollinearity not only with one variable but with two in our first Spearman Correlation Plot. The variables `est_diameter_min` and `est_diameter_max` are perfectly positively correlated with each other, and perfectly negatively correlated with the variable `absolute_magnitude`. So, for the previously mentioned reasons, we will re-do our Spearman Correlation Plot without both of these variables. Thus, we are left with `relative_velocity`, `miss_distance` and `absolute_magnitude` as our independent variables. As for the interpretation with our dependent variable `hazardous` this second Spearman Correlation Plot reveals to us that `absolute_magnitude` has the highest degree of influence with a ***-0.37** coefficient, then `relative_velocity` with a **0.18** coefficient, and lastly `miss_distance` with virtualy no degree of influence **0.04**.
 
 ```{r, results='markup'}
 library(corrplot)
@@ -158,7 +164,9 @@ library('GGally')
 ggpairs(neo_cor3)
 ```
 
-#Feature Selection: Lasso Regression 
+## Feature Selection: Lasso Regression 
+
+Next up in our feature selection models, we conducted a Lasso Regression. Lasso Regressions are elastic-net regularization methods that seek to add a penalty term for each independent coefficient in the model. Particularly, a Lasso Regression will add a L-1 penalty term, which is similar to a Manhattan distance, for varying degrees of lambda until each coefficient is reduced to zero. Ultimately, the logic behind a Lasso Regression is that the last coefficient to be converted to zero tends to be the most significant. Also, for this particular case since our dependent variable is categorical, we used binomial deviance as our measure to find the smallest degree of error by the log of lambda. As can be visualized in our first graph, the smallest degree of binomial deviance is when log lambda is equal to **7**, hence this represents a good starting point for our Lasso Regression. As can be noticed in our second graph, the coefficients start at the smalles point of error and eventually, as log lambda increases, all the coefficients turn to zero. However, `absolute_magnitude` by a landslide appeared to be the most significant coefficient as, unlike `miss_distance` and `relative_velocity`, it was the last to turn to zero. Which basically confirms our results in the previous Spearman Correlation Plot.
 
 ```{r, results='markup'}
 
@@ -187,7 +195,9 @@ plot_glmnet(cv.lambda.lasso$glmnet.fit,
      "lambda", label =TRUE, main = 'Lasso Regression')
 ```
 
-#Feature Selection: Bayesian Information Criterion (BIC) plot
+## Feature Selection: Bayesian Information Criterion (BIC) plot
+
+Last in the line-up of our feature selection models, we decided to conduct a BIC plot. A BIC plot shows us the lowest Bayesian Information Criterion point for each possible model. The logic behind the plot is that the lowest BIC possible represents the best possible the model. From our graph, we can notice that for the lowest BIC possible of **-87,000** the best model is that which includes all of the independent variables. And curiously enough, for each of the other lowest possible BIC levels, `absolute_magnitude` is included.
 
 ```{r, results='markup'}
 
@@ -201,7 +211,18 @@ plot(reg.leaps, scale = "bic", main = "BIC", las =1)
 
 ```
 
+Thus, from our feature selections models, we have gathered that the best possible model is that which uses all of the independent variables, and that the most significant variable is `absolute_magnitude`, which recall represents the degree luminosity, calculated by its distance orbited to the sun, of the nearest earth objects.
+
 #Logistic Regression 
+
+## Interpretation of coefficients
+
+The equation from the Logistic Regression model: 
+
+logit(y(`hazardous`)) = 1.89e+01 + 1.89e+01* (`relative_velocity`) - 8.65e-01* (`absolute_magnitude`) - 1.50e-08* (`miss_distance`)
+
+As hinted from our feature selection, all of the independent variable's coefficients are statistically significant. To make our interpretation of the coefficients even simpler, we decided that it would be best to describe them in terms of their odds, not log odds. Therefore, from our results we can observe that the odds of a neo being hazardous increases when its relative velocity increases, its absolute magnitude decreases and its miss distance decreases. 
+
 
 ```{r, results='markup'}
 
@@ -211,8 +232,16 @@ summary(glm.nasa)
 
 ```
 
-
 #Logistic Regression: Evaluation Metrics
+
+
+* Confusion Matrix: With the addition of SMOTE to our dataframe we where able to improve our confusion matrix results to yield a higher recall score. From this particular model, the accuracy turned out to be **85.30%**, specificity (FPR) **91.16%** and Recall (TPR) **80.73%**. Therefore, the model did a good job at predicting actual true hazardous neo's, as well as an even better job at predicting actual not hazardous neo's.
+
+* McFadden's value: The McFadden value, or pseudo r^2, was of **0.40**. So the model was able to interpret about 40% of the variance in the outcome of `hazardous`.
+
+
+* Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC): The ROC curve appeared to be very steep indicating that it had a good True-Positive Rate (TPR) by False-Positive Rate (FPR), indicating that it performed substantially well. And lastly, the AUC was of **0.877** indicating that this was a good model to accept.
+
 
 ```{r, results='markup'}
 set.seed(123)
@@ -240,6 +269,8 @@ glm.nasa$coefficients
 
 #Logistic Regression: Sample predictions
 
+
+
 ```{r, results='markup'}
 
 glm_plot1 <- with(neo_cor3, data.frame(relative_velocity = mean(relative_velocity), miss_distance = mean(miss_distance), absolute_magnitude = rep(seq(from = 9, to = 34, length.out = 100), 2)))
@@ -256,42 +287,12 @@ ggplot(glm_plot2, aes(x = absolute_magnitude, y = PredictedProb)) + geom_ribbon(
 
 ```
 
-```{r, results='markup'}
-
-glm_plot3 <- with(neo_cor3, data.frame(relative_velocity = mean(relative_velocity), miss_distance = rep(seq(from = 6700, to = 75000000, length.out = 100), 2), absolute_magnitude = mean(absolute_magnitude)))
-
-glm_plot4 <- cbind(glm_plot3, predict(glm.nasa, newdata = glm_plot3, type = "link", se = TRUE))
-glm_plot4 <- within(glm_plot4, {
-    PredictedProb <- plogis(fit)
-    LL <- plogis(fit - (1.96 * se.fit))
-    UL <- plogis(fit + (1.96 * se.fit))
-})
-
-ggplot(glm_plot4, aes(x = miss_distance, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
-    ymax = UL), alpha = 0.2) + geom_line(aes(colour = 'blue'),
-    size = 1)
-
-```
-
-
-```{r, results='markup'}
-
-glm_plot5 <- with(neo_cor3, data.frame(relative_velocity = rep(seq(from = 200, to = 240000, length.out = 100), 2), miss_distance = mean(miss_distance), absolute_magnitude = mean(absolute_magnitude)))
-
-glm_plot6 <- cbind(glm_plot5, predict(glm.nasa, newdata = glm_plot5, type = "link", se = TRUE))
-glm_plot6 <- within(glm_plot6, {
-    PredictedProb <- plogis(fit)
-    LL <- plogis(fit - (1.96 * se.fit))
-    UL <- plogis(fit + (1.96 * se.fit))
-})
-
-ggplot(glm_plot6, aes(x = relative_velocity, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
-    ymax = UL), alpha = 0.2) + geom_line(aes(colour = 'blue'),
-    size = 1)
-
-```
 
 #Sample Predictions
+
+* Prediction #1:
+
+* Prediction #2:
 
 ```{r, results='markup'}
 
@@ -304,6 +305,13 @@ predict(glm.nasa, newdata = sampleprediction1, type = 'response')
 predict(glm.nasa, newdata = sampleprediction2, type = 'response')
 
 ```
+
+
+
+
+
+
+
 
 # References:
 
