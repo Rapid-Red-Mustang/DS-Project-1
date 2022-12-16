@@ -267,9 +267,9 @@ glm.nasa$coefficients
 ```
 
 
-#Logistic Regression: Sample predictions
+#Logistic Regression: Visualization
 
-
+From this graph we are able to identify each predicted probability, of our Logistic Regression model, by each value of `absolute_magnitude`. As observed, we notice that a good heuristic to have when it comes to hazardous or not-hazardous neo's is whether its `absolute_magnitude` is greater or less than 22. From our model, if the `absolute_magnitude` is greater than 22 then it predicts the neo to not be hazardous, and if the `absolute_magnitude` is less than 22 it predicts the neo to be hazardous. If the neo's `absolute_magnitude` is equal to 22 then it is a 50-50% chance of it being hazardous or not. This is a good heuristic to have in mind.
 
 ```{r, results='markup'}
 
@@ -290,9 +290,9 @@ ggplot(glm_plot2, aes(x = absolute_magnitude, y = PredictedProb)) + geom_ribbon(
 
 #Sample Predictions
 
-* Prediction #1:
+* Prediction #1 (2022 AP7): We decided to compare our results with an recent and actual neo that is hazardous. Luckily for us, the model was able to predict with a **90.10%** predicted probability that the asteroid was indeed hazardous.
 
-* Prediction #2:
+* Prediction #2 (2017 CM): We decided to compare our results with an recent and actual neo that was NOT hazardous. Luckily for us, the model was able to predict with a **36.80%** predicted probability that the asteroid was indeed NOT hazardous.
 
 ```{r, results='markup'}
 
