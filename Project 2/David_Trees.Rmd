@@ -81,7 +81,9 @@ print('Class: ')
 cm$byClass
 ```
 
-The following code to create the confusion matrix allows for detailed interpretation of accuracy, sensitivity, specificity, predicted value in either direction, and the level of precision. We are able to create a "fancy" plot using rattle. 
+The following code to create the confusion matrix allows for detailed interpretation of accuracy, sensitivity, specificity, predicted value in either direction, and the level of precision. We are able to create a "fancy" plot using rattle.
+
+The plot shows absolute magnitude as a strong predictor of 'hazardous' status of the NEO. Objects with greater than or equal to '22' tend to be safe 68% of the time. Objects lower than '22' absolute magnitude tend to be hazardous 32% of the time, and 'miss distance' greater 11e+6 tend to be safe 31% of the time. 
 
 ```{r}
 confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
