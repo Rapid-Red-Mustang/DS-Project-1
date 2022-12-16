@@ -35,9 +35,15 @@ Throughout the rest of this RMD file, we go over each of these 3 variables in co
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Decision Trees are a type of nonparametric supervised machine learning algo that work to form categorical and/or quantitative predictors. In many ways, they do exactly what they sound like: allow the reader to decide on the probability of certain outcomes based on concurrent and previous criteria.
+<span style="color: Cyan;">Decision Trees are a type of nonparametric supervised machine learning algo that work to form categorical and/or quantitative predictors. In many ways, they do exactly what they sound like: allow the reader to decide on the probability of certain outcomes based on concurrent and previous criteria.</span> 
 
-The following code begins by plotting a simple classification tree and showing the size of the relative "x" error. 
+One advantage of using trees is the ease-of-use: with minimal explanation, anyone can follow along the "branches." 
+
+Trees are also resistant to outliers, and can be evaluated for their "data-worthiness" by industry-standard metrics of accuracy, precision, recall, and ROC/AUC. 
+
+Some disadvantages to use of trees include chance of overfitting the data and the largest trees may be unwieldy. 
+
+The following code begins by plotting a simple classification tree and showing the size of the relative "x-value" error. 
 
 ```{r}
 install.packages("rpart", repos='http://cran.us.r-project.org') # Classification trees, rpart(formula, data=, method=,control=)
@@ -57,6 +63,8 @@ plot(neofit, uniform=TRUE, main="Classification Tree for NEO")
 text(neofit, use.n=TRUE, all=TRUE, cex=0.9, col="red")
 ```
 
+The following code allows to generate a post-script file. 
+
 ```{r}
 post(neofit, file = "neoTree.ps", title = "Classification Tree for NEO")
 ```
@@ -72,6 +80,8 @@ cm$overall
 print('Class: ')
 cm$byClass
 ```
+
+The following code to create the confusion matrix allows for detailed interpretation of accuracy, sensitivity, specificity, predicted value in either direction, and the level of precision. We are able to create a "fancy" plot using rattle. 
 
 ```{r}
 confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
