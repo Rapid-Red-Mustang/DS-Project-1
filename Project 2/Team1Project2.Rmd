@@ -4,6 +4,7 @@ author: "Tyler Wallett, Anushka Vuppala and David Li"
 # date: "today"
 date: "`r Sys.Date()`"
 output: 
+  rmdformats::readthedown:
   html_document:
     code_folding: hide
     number_sections: false
@@ -45,7 +46,7 @@ Out of these 5 variables, we have 3 variables that play a primary role in determ
 1.	miss_distance
 1.	absolute_magnitude
 
-Throughout the rest of this RMD file, we go over each of these 3 variables in complete depth to answer our SMART question – what are some of the statistical characteristics of Nearest Earth Objects, over the last 22 years, in terms of relative velocity, miss distance and absolute magnitude, that make them hazardous or not?
+Throughout the rest of this RMD file, we will try to build a binary classification model that would use these parameters and then predict if any future asteroid that is striking the Earth would be hazardous or not? 
 
 
 ```{r setup, include=FALSE}
@@ -95,7 +96,7 @@ summary(neo)
 
 # PROJECT 2
 
-Before we begin any modeling, it is good practice to have a training and test accuracy.
+Before we begin any modeling, it is good practice to perform some feature engineering.
 
 # Sampling of data
 ## Helper functions
@@ -111,6 +112,7 @@ basicKNN5 <- function() {
 }
 ```
 
+As part of feature engineering, let's first consider a base model to play with. The base model that we are considering here is the KNN model with a k=5.
 Below is the R code of performing the split without any sampling technique used.
 We would also be using the training and testing data to check the accuracy of a base KNN model. We would implement this KNN model with the k value equal to 5 for the purpose of comparison between different sampling techniques.
 
@@ -170,7 +172,7 @@ nasa_test = Standardization(nasa_test)
 
 basicKNN5()
 ```
-From downsampling result above, we see that the results have become more realisti. In other words, we see that our Specificity rate has increased to 92% which is a great indicator of a great model. However, one biggest disadvantage of downsampling is loss of data. We are training the model with insufficient amount of data.
+From downsampling result above, we see that the results have become more realistic. In other words, we see that our Specificity rate has increased to 92% which is a great indicator of a great model. However, one biggest disadvantage of downsampling is loss of data. We are training the model with insufficient amount of data.
 
 The next obvious sampling technique is upsampling. One such case of upsampling is SMOTE. Smote created artificial data points to bring up the data points in minority class.
 
@@ -210,7 +212,10 @@ nasa_test = scale(nasa_test[,1:3], center = TRUE, scale = TRUE)
 basicKNN5()
 ```
 
-From the above, we can see that we have finally received a higher rate of Recall. 
+From the above, we can see that we have finally received a higher rate of Recall=92%. 
+The reason we see recall as an important metric rather than accuracy is because of the significance of False Negative. False Negative indicates that the total number of asteroids that were predicted non-hazardous by our model, but in actuality, it is hazardous. This is very dangerous in our case as we would not be able to take timely action if in any case our model predicted a hazardous asteroid as non-hazardous. 
+
+Before jumping into models, let us do a count comparison of our dataset before and after smote. 
 
 # Count Plot of data points after SMOTE
 ```{r, results='markup'}
@@ -229,9 +234,9 @@ ggplot(my_data,
 
 ```
 
-Now, this is only with k=5. Let's explore k value with a defined set of ranges. Ideally, k has a value between 5 and 20. We shall run a for loop to get accuracy of each odd valued k to find the optimal one.
+Before we perform modeling, we would also go over the feature selection below.
 
-#Feature Selection 
+# Feature Selection 
 
 Before doing the modeling section of our analysis, we decided to conduct a feature selection. A feature selection will help us to properly identify those features, or variables, that are most important to include in our models. In this manner, we can get the best model with the given data. To do identify these features, we decided to use three relevant feature selection models, these are: Spearman Correlation Plot, Lasso Regression and Bayesian Information Criterion (BIC) plot. Each feature selection model will interpret the data in their own manner and yield a different conclusion as to which feature is best to use. Therefore, if there is a feature that is indeed important, it should, in theory, be noticeable across each of these feature selection models.
 
@@ -247,19 +252,12 @@ neo_cor$hazardous = as.numeric(as.logical(neo_cor$hazardous))
 
 corrplot(cor(neo_cor, method ='spearman'), method = "number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
 
-neo_cor2 <- select(neo, c(4:6,9,10))
-neo_cor2$hazardous = as.numeric(as.logical(neo_cor2$hazardous))
-
-corrplot(cor(neo_cor2, method ='spearman'), method = "number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
-
 neo_cor3 <- select(neo, c(5:6,9,10))
 neo_cor3$hazardous = as.numeric(as.logical(neo_cor3$hazardous))
 
 corrplot(cor(neo_cor3, method ='spearman'), method = "number", title = "Spearman Correlation", outline = TRUE, mar = c(1,1,1,1))
 
-library('ggplot2')
-library('GGally')
-ggpairs(neo_cor3)
+
 ```
 
 ## Feature Selection: Lasso Regression 
@@ -310,11 +308,17 @@ plot(reg.leaps, scale = "bic", main = "BIC", las =1)
 
 Thus, from our feature selections models, we have gathered that the best possible model is that which uses all of the independent variables, and that the most significant variable is `absolute_magnitude`, which recall represents the degree luminosity, calculated by its distance orbited to the sun, of the nearest earth objects.
 
-# KNN
+
+
+# MODELS
+
+The above sampling techniques were performed only with k=5. Let's explore k value with a defined set of ranges. Ideally, k has a value between 5 and 20. We shall run a for loop to get accuracy of each odd valued k to find the optimal one.
+
+## KNN
 ```{r, results='markup'}
 ResultDf = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
 set.seed(222)
-for (kval in seq(1,18,2)) {
+for (kval in seq(1,20,2)) {
   nasa_pred <- knn(train = nasa_train, test = nasa_test, cl=nasa_train.labels, k=kval)
   cm = confusionMatrix(nasa_pred, as.factor(nasa_test.labels) ) # from caret library
   cmaccu = cm$overall['Accuracy']
@@ -325,7 +329,7 @@ xkabledply(ResultDf, "Total Accuracy Summary:")
 
 ```
 
-Now, with the accuracies defined for all possible k values, we shall draw a plot and see the accuracies.
+Now, with the accuracies defined for all possible k values, we shall draw a plot and see and compare the accuracies.
 ```{r, results='markup'}
 ggplot(data=ResultDf, aes(x=k, y=Total.Accuracy,group=1)) +
   geom_line(color="#aa0022", size=1.75) +
@@ -338,12 +342,12 @@ ggplot(data=ResultDf, aes(x=k, y=Total.Accuracy,group=1)) +
 
 
 ```
-From the above, we see that when k=9, we get the good accuracy of 87.6%
-Please note that despite having higher accuracies beyond k=9, we should keep in mind that having a higher k value leads to overfitting of the model and thus, we need to be mindful when choosing our k value.
+From the above, we see that when k=9, we get the highest accuracy of 87.6%
+Please note that despite having higher accuracies beyond k=9, we should keep in mind that having a higher k value leads to overfitting of the model and thus, we need to be very mindful when choosing our k value.
 
-Now, taking k=9, we should perform model evaulation.
+Now, taking k=9, we shall perform model evaulation.
 
-## KNN model Evaluation
+### KNN model Evaluation
 ```{r, results='markup'}
 
 knn.9 <- knn(train=nasa_train, test=nasa_test, cl=nasa_train.labels, k=9, prob=TRUE)
@@ -359,11 +363,11 @@ plot(roc(nasa_test.labels, attributes(knn.9)$prob),
 
 
 ```
-From the above, we see that the recall we obtain is 80% which is better than all of the above sampling techniques we have used above. In addition to this, we also see that the area under the curve is 0.706. Ideally, anything over 0.8 is considered good fit model. But area under the curve = 0.706 is considered an acceptable model. In conclusion, the KNN model with SMOTE sampling resulted in a good accuracy turnout. In addition to this, when k=11, we get the best accuracy in comparison with the rest.
+From the above, we see that the recall we obtain is 80% which is better than all of the above sampling techniques we have used above. In addition to this, we also see that the area under the curve is 0.706. Ideally, anything over 0.8 is considered good fit model. But area under the curve = 0.706 is considered an "acceptable model". In conclusion, the KNN model with SMOTE sampling resulted in a good accuracy turnout. In addition to this, when k=11, we get the best accuracy in comparison with the rest.
 
-#Logistic Regression 
+## Logistic Regression 
 
-## Interpretation of coefficients
+### Interpretation of coefficients
 
 The equation from the Logistic Regression model: 
 
@@ -379,7 +383,7 @@ summary(glm.nasa)
 
 ```
 
-## Logistic Regression: Evaluation Metrics
+### Logistic Regression: Evaluation Metrics
 
 
 * Confusion Matrix: With the addition of SMOTE to our dataframe we where able to improve our confusion matrix results to yield a higher recall score. From this particular model, the accuracy turned out to be **85.30%**, specificity (FPR) **91.16%** and Recall (TPR) **80.73%**. Therefore, the model did a good job at predicting actual true hazardous neo's, as well as an even better job at predicting actual not hazardous neo's.
@@ -413,7 +417,7 @@ glm.nasa$coefficients
 ```
 
 
-## Logistic Regression: Visualization
+### Logistic Regression: Visualization
 
 From this graph we are able to identify each predicted probability, of our Logistic Regression model, by each value of `absolute_magnitude`. As observed, we notice that a good heuristic to have when it comes to hazardous or not-hazardous neo's is whether its `absolute_magnitude` is greater or less than 22. From our model, if the `absolute_magnitude` is greater than 22 then it predicts the neo to not be hazardous, and if the `absolute_magnitude` is less than 22 it predicts the neo to be hazardous. If the neo's `absolute_magnitude` is equal to 22 then it is a 50-50% chance of it being hazardous or not. This is a good heuristic to have in mind.
 
@@ -433,25 +437,23 @@ ggplot(glm_plot2, aes(x = absolute_magnitude, y = PredictedProb)) + geom_ribbon(
 
 ```
 
-## Sample Predictions
 
-* Prediction #1 (2022 AP7): We decided to compare our results with an recent and actual neo that is hazardous. Luckily for us, the model was able to predict with a **90.10%** predicted probability that the asteroid was indeed hazardous.
 
-* Prediction #2 (2017 CM): We decided to compare our results with an recent and actual neo that was NOT hazardous. Luckily for us, the model was able to predict with a **36.80%** predicted probability that the asteroid was indeed NOT hazardous.
 
-```{r, results='markup'}
 
-sampleprediction1 = data.frame(relative_velocity = 17.38, absolute_magnitude = 17.1, miss_distance = 1.2417e+8)
 
-sampleprediction2 = data.frame(relative_velocity = 21.80, absolute_magnitude = 18.02, miss_distance = 2.543e+8)
+## Decision Trees
 
-predict(glm.nasa, newdata = sampleprediction1, type = 'response')
+Decision Trees are a type of nonparametric supervised machine learning algo that work to form categorical and/or quantitative predictors. In many ways, they do exactly what they sound like: allow the reader to decide on the probability of certain outcomes based on concurrent and previous criteria.</span> 
 
-predict(glm.nasa, newdata = sampleprediction2, type = 'response')
+One advantage of using trees is the ease-of-use: with minimal explanation, anyone can follow along the "branches." 
 
-```
+Trees are also resistant to outliers, and can be evaluated for their "data-worthiness" by industry-standard metrics of accuracy, precision, recall, and ROC/AUC. 
 
-# Decision Trees
+Some disadvantages to use of trees include chance of overfitting the data and the largest trees may be unwieldy. 
+
+The following code begins by plotting a simple classification tree and showing the size of the relative "x-value" error. 
+
 
 ```{r}
 install.packages("rpart", repos='http://cran.us.r-project.org') 
@@ -470,14 +472,20 @@ summary(neofit) # detailed summary of splits
 plot(neofit, uniform=TRUE, main="Classification Tree for NEO")
 text(neofit, use.n=TRUE, all=TRUE, cex=0.9, col="red")
 ```
+
+The following code allows to generate a post-script file. 
 ```{r}
 post(neofit, file = "neoTree.ps", title = "Classification Tree for NEO")
 ```
 
+
+The following code to create the confusion matrix allows for detailed interpretation of accuracy, sensitivity, specificity, predicted value in either direction, and the level of precision. We are able to create a "fancy" plot using rattle.
+
 ```{r, include=T}
 library(caret)
-neo[,'hazardous'] <- as.factor(neo[,'hazardous']
-cm = confusionMatrix( predict(neofit, type = "class"), reference = neo[, "hazardous"] )
+newdata[,'hazardous'] <- as.factor(newdata[,'hazardous'])
+
+cm = caret::confusionMatrix( predict(neofit, type = "class"), reference = newdata[, "hazardous"] )
 xkabledply(cm$table, "confusion matrix")
 print('Overall: ')
 cm$overall
@@ -489,8 +497,8 @@ cm$byClass
 confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
 
 for (deep in 2:6) {
-neofit2 <- rpart(hazardous ~  absolute_magnitude + miss_distance + relative_velocity, data=neo, method="class", control = list(maxdepth = deep) )
-cm2 = confusionMatrix( predict(neofit2, type = "class"), reference = neo[, "hazardous"] )
+neofit2 <- rpart(hazardous ~  absolute_magnitude + miss_distance + relative_velocity, data=newdata, method="class", control = list(maxdepth = deep) )
+cm2 = caret::confusionMatrix( predict(neofit2, type = "class"), reference = newdata[, "hazardous"] )
  cmaccu = cm2$overall['Accuracy']
  cmt = data.frame(Depth=deep, Accuracy = cmaccu, row.names = NULL )
 cmt = cbind( cmt, data.frame( t(cm$byClass) ) )
@@ -510,6 +518,9 @@ library(rattle)
 rpart.plot(neofit)
 fancyRpartPlot(neofit)
 ```
+
+The plot shows absolute magnitude as a strong predictor of 'hazardous' status of the NEO. Objects with greater than or equal to '22' tend to be safe 68% of the time. Objects lower than '22' absolute magnitude tend to be hazardous 32% of the time, and 'miss distance' greater 11e+6 tend to be safe 31% of the time. 
+
 
 ```{r}
 install.packages("ISLR",repos='http://cran.us.r-project.org')
@@ -558,8 +569,32 @@ plot(tree.roc)
 
 
 ```
+The AUC value for our tree is only 0.51, making trees poorer in this aspect compared to logistic regression and KNN. 
 
-# Sample Predictions
+
+# Model Comparisons
+Now, let's compare the above 3 models. 
+
+```{r table2, warnings=FALSE, results='asis'}
+scores <- data.frame ( model = c ("KNN","Logisitic Regression","Classification Tree"),
+  Accuracy  = c("87.9%", "85.3%", "88.1%"),
+                  Specificity = c("96.2%", "91.16", "98.9%"),
+                    Recall = c("79.8%", "80.73%", "77.6%"),
+                    AUC = c("0.717", "0.877", "0.51"))
+                  
+xkabledply(scores)
+```
+
+As mentioned previously, we would be considering Recall and AUC score as the critical metrics. From the above, we see that the Logistic Regression has the highest Recall and AUC score. Additionally, we know that AUC score > 0.8 is considered the best fit model. And here, we have Logistic Regression having the highest AUC score equal to 0.877. With this, we conclude that Logistic Regression is the best model for this dataset. Now, we use the logistic regression on a sample asteroids ton test our models.
+
+
+
+
+## Sample Predictions
+
+* Prediction #1 (2022 AP7): We decided to compare our results with an recent and actual neo that is hazardous. Luckily for us, the model was able to predict with a **90.10%** predicted probability that the asteroid was indeed hazardous.
+
+* Prediction #2 (2017 CM): We decided to compare our results with an recent and actual neo that was NOT hazardous. Luckily for us, the model was able to predict with a **36.80%** predicted probability that the asteroid was indeed NOT hazardous.
 
 ```{r, results='markup'}
 
